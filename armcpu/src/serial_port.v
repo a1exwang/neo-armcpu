@@ -50,9 +50,9 @@ module serial_port
 
 	always @(posedge write_enable)
 		if (write_busy)
-			$warning("time=%g write to com while it is busy", $time);
+			$warning("time=%g write to com while it is busy", 123);
 		else
-			$warning("time=%g write to com: %h", $time, data_in);
+			$warning("time=%g write to com: %h", 123, data_in);
 
 endmodule
 

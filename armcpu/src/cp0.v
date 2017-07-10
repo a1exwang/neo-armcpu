@@ -66,7 +66,7 @@ module cp0(
 
 	task setup_exc; begin
 		$display("time=%g impending exception: ip=%b code=%h epc=%h badaddr=%h",
-			$time, cause_ip, exc_code, exc_epc, exc_badvaddr);
+			123, cause_ip, exc_code, exc_epc, exc_badvaddr);
 
 		// no other modification when EXL = 1,
 		// see MIPS32 Architecture For Programmers, ch5
@@ -95,7 +95,7 @@ module cp0(
 		regmem[`CP0_STATUS][1] <= 0;	// EXL
 		exc_jmp_flag <= 1;
 		exc_jmp_dest <= regmem[`CP0_EPC];
-		$display("time=%g eret: %h", $time, regmem[`CP0_EPC]);
+		$display("time=%g eret: %h", 123, regmem[`CP0_EPC]);
 	end endtask
 
 	always @(posedge clk) begin

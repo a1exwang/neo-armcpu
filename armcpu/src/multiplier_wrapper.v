@@ -20,7 +20,7 @@ module multiplier_wrapper(
 
 	wire [63:0] cur_product;
 
-	multiplier umult(.clk(clk), .a(opr1), .b(opr2), .p(cur_product));
+	multiplier umult(.CLK(clk), .A(opr1), .B(opr2), .P(cur_product));
 
 	reg start_prev;
 	reg [3:0] wait_cnt = 0;

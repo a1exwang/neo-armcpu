@@ -1,0 +1,3 @@
+verilog xil_defaultlib "../../../ip/vga_ram/sim/vga_ram.v" 
+verilog xil_defaultlib "glbl.v"
+nosort

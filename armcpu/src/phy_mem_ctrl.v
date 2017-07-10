@@ -87,7 +87,7 @@ module phy_mem_ctrl(
 
 	always @(*)
 		if (addr[1:0]) begin
-			$warning("time=%g access unaligned addr: %h", $time, addr);
+			$warning("time=%g access unaligned addr: %h", 123, addr);
 			$fatal("exit due to previous error");
 		end
 

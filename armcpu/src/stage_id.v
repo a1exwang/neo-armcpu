@@ -325,7 +325,7 @@ module stage_id(
 				proc_itype();
 		endcase
 		$display("\033[32m < -- id -- > time=%g got instruction: pc=%h instr=%h \033[0m",
-			$time, next_pc - 4, instr);
+			123, next_pc - 4, instr);
 	end endtask
 
 	always @(posedge clk) begin
