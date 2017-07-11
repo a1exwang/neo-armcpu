@@ -42,11 +42,13 @@ module system
 	output [8:0] vga_color_out, // 3 red, 3 green, 3 blue
 	output vga_hsync,
 	output vga_vsync,
+	output vga_de,
 
 	// ascii keyboard interface
 	input kbd_int,
 	output kbd_int_ack,
-	input [7:0] kbd_data);
+	input [7:0] kbd_data,
+	output [31:0] test_mmu_instr_addr);
 
 	// ------------------------------------------------------------------
 
@@ -69,7 +71,8 @@ module system
 		.dev_mem_data_in(data_from_mem),
 		.dev_mem_data_out(data_to_mem),
 		.dev_mem_is_write(mem_is_write),
-		.dev_mem_busy(mem_busy));
+		.dev_mem_busy(mem_busy),
+		.test_mmu_instr_addr(test_mmu_instr_addr));
 
 	phy_mem_ctrl umem(.clk50M(clk50M), .rst(rst),
 		.is_write(mem_is_write), .addr(mem_addr),
@@ -120,7 +123,9 @@ module system
 		
 		.color_out(vga_color_out),
 		.hsync(vga_hsync),
-		.vsync(vga_vsync));
+		.vsync(vga_vsync),
+		.de(vga_de));
+		
 
 endmodule
 

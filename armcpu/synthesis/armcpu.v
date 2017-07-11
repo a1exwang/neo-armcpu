@@ -39,10 +39,12 @@ module armcpu(
 	output [8:0] vga_color_out,
 	output vga_hsync,
 	output vga_vsync,
+	output vga_de,
 
 	input kbd_enb_hi,
 	input kbd_enb_lo,
-	input [3:0] kbd_data);
+	input [3:0] kbd_data,
+	output [31:0] test_mmu_instr_addr);
 
 	// ------------------------------------------------------------------
 
@@ -113,10 +115,12 @@ module armcpu(
 		.vga_color_out(vga_color_out),
 		.vga_hsync(vga_hsync),
 		.vga_vsync(vga_vsync),
+		.vga_de(vga_de),
 	
 		.kbd_int(kbd_int_req),
 		.kbd_int_ack(kbd_int_ack),
-		.kbd_data(kbd_ascii));
+		.kbd_data(kbd_ascii),
+		.test_mmu_instr_addr(test_mmu_instr_addr));
 
 	always @(posedge clk_cpu)
 		led[7:0] <= {cpu_speed[3:0], led[2:0], !led[2:0]};

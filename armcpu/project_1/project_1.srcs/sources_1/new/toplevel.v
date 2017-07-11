@@ -141,11 +141,68 @@ assign dm9k_rst_n = 0;
 
 // VGA
 assign vga_clk = clk_in;
-assign vga_de = 0;
+
+/////////////////// VGA Test
+//localparam H_VISIBLE_AREA = 800,
+//    H_FRONT_PORCH = 56,
+//    H_SYNC_PULSE = 120,
+//    H_BACK_PORCH = 64,
+//    H_WHOLE = 1040;
+
+//localparam V_VISIBLE_AREA = 600,
+//    V_FRONT_PORCH = 37,
+//    V_SYNC_PULSE = 6,
+//    V_BACK_PORCH = 23,
+//    V_WHOLE = 666;
+
+//localparam RAM_ADDR_BASE = 18'h2000;
+//// i do not know why lower addr of uram does not work
+
+//reg [10:0] hsync_cnt = 0;
+//reg [10:0] vsync_cnt = 0;
+
+//assign vga_hsync = (hsync_cnt >= H_SYNC_PULSE);
+//assign vga_vsync = (vsync_cnt >= V_SYNC_PULSE);
+
+//wire [10:0] pixel_x = (hsync_cnt >= H_SYNC_PULSE + H_FRONT_PORCH ?
+//    hsync_cnt - H_SYNC_PULSE - H_FRONT_PORCH : {11{1'b1}});
+//wire [10:0] pixel_y = (vsync_cnt >= V_SYNC_PULSE + V_FRONT_PORCH ?
+//    vsync_cnt - V_SYNC_PULSE - V_FRONT_PORCH : {11{1'b1}});
+//wire [`VGA_ADDR_WIDTH-1:0] pixel_ram_addr =
+//    {pixel_y[10:1], {`VGA_WIDTH_MULT_SHIFT{1'b0}}} + pixel_x[10:1];
+
+//wire should_draw = pixel_x >= 0 && pixel_x < H_VISIBLE_AREA &&
+//    pixel_y >= 0 && pixel_y < V_VISIBLE_AREA;
+
+//wire [2:0] red = 3'b101, green = 3'b100, blue = 3'b111;
+//reg [7:0] vga_color_out;
+//reg vga_data_en1;
+//always @(posedge clk_in) begin
+//    if (hsync_cnt == H_WHOLE - 1) begin
+//        hsync_cnt <= 0;
+//        if (vsync_cnt == V_WHOLE - 1) begin
+//            vsync_cnt <= 0;
+//        end else begin
+//            vsync_cnt <= vsync_cnt + 1'b1;
+//        end
+//    end else begin
+//        hsync_cnt <= hsync_cnt + 1'b1;
+//    end
+//    if (should_draw) begin
+//        vga_color_out <= {blue, green, red};
+//        vga_data_en1 <= 1;
+//    end else begin
+//        vga_color_out <= 0;
+//        vga_data_en1 <= 0;
+//    end
+//end
+//assign vga_pixel = vga_color_out;
+//assign vga_de = vga_data_en1 
+wire [31:0] test_mmu_instr_addr;
 
 armcpu wtfcpu(
     .clk50M(clk_in),
-    .rst_key(touch_btn[4]),
+    .rst_key(touch_btn[3]),
     .clk_manual(touch_btn[5]),
     .segdisp0({leds[23:22],leds[19:17],leds[20],leds[21]}),
     .segdisp1({leds[31:30],leds[27:25],leds[28],leds[29]}),
@@ -170,16 +227,25 @@ armcpu wtfcpu(
     
     .flash_addr({0,flash_address}),
     .flash_data(flash_data),
-    .flash_ctl({flash_rp_n,flash_vpen,flash_oe_n,
-        flash_ce, flash_byte_n, flash_we_n}),
+ //	  flash_byte,
+//    flash_ce,
+//    2'b0,    // ce1 ce2
+//    flash_oe,
+//    flash_rp,
+//    flash_vpen,
+//    flash_we};
+    .flash_ctl({~flash_byte_n,flash_ce, 2'bZZ,
+        ~flash_oe_n,~flash_rp_n,flash_vpen,~flash_we_n}),
     
-    .vga_color_out({0,vga_pixel}),
+    .vga_color_out(vga_pixel),
     .vga_hsync(vga_hsync),
     .vga_vsync(vga_vsync),
+    .vga_de(vga_de),
     
     .kbd_enb_hi(0),
     .kbd_enb_lo(0),
-    .kbd_data(0)
+    .kbd_data(0),
+    .test_mmu_instr_addr(test_mmu_instr_addr)
 );
 
 

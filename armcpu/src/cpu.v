@@ -31,7 +31,8 @@ module cpu(
 	input [31:0] dev_mem_data_in,
 	output [31:0] dev_mem_data_out,
 	output dev_mem_is_write,
-	input dev_mem_busy);
+	input dev_mem_busy,
+	output [31:0] test_mmu_instr_addr);
 
 	// -------------------------------------------------------------------
 
@@ -179,5 +180,6 @@ module cpu(
 		.dev_mem_is_write(dev_mem_is_write),
 		.dev_mem_busy(dev_mem_busy));
 
+    assign test_mmu_instr_addr = mmu_instr_addr;
 endmodule
 

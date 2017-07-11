@@ -15,7 +15,8 @@ module vga(
 
 	output reg [8:0] color_out, // blue, green, red
 	output hsync,
-	output vsync);
+	output vsync,
+	output de);
 
 	localparam H_VISIBLE_AREA = 800,
 		H_FRONT_PORCH = 56,
@@ -69,7 +70,8 @@ module vga(
 			2: blue <= 3'b101;
 			3: blue <= 3'b111;
 		endcase
-
+    
+    reg my_de;
 	always @(posedge clk50M) begin
 		if (hsync_cnt == H_WHOLE - 1) begin
 			hsync_cnt <= 0;
@@ -81,11 +83,15 @@ module vga(
 		end else begin
 			hsync_cnt <= hsync_cnt + 1'b1;
 		end
-		if (should_draw) 
+		if (should_draw) begin
 			color_out <= {blue, green, red};
-		else
+			my_de <= 1;
+		end else begin
 			color_out <= 0;
+			my_de <= 0;
+		end
 	end
+	assign de = my_de;
 
 
 endmodule
