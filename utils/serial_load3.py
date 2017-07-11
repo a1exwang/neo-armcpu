@@ -145,38 +145,42 @@ def ram_test():
     offset = 0x80000000
     scan_bit = 0x4
     testdata1 = 0xdeadbeef
-    write_ram(offset, struct.pack('I',testdata1), False)
-    while scan_bit < RAM_SIZE:
-        testdata1 += 1
-        write_ram(offset+scan_bit, struct.pack('I',testdata1), False)
-        scan_bit <<= 1
-    scan_bit = 0x4
+    #  write_ram(offset, struct.pack('I',testdata1), False)
+    #  while scan_bit < RAM_SIZE:
+    #      testdata1 += 1
+    #      write_ram(offset+scan_bit, struct.pack('I',testdata1), False)
+    #      scan_bit <<= 1
+    #  scan_bit = 0x4
+    scan_bit = 0
     testdata1 = 0xdeadbeef
     while scan_bit < RAM_SIZE:
         testdata1 += 1
-        if struct.pack('I',testdata1) != read_ram(offset+scan_bit, 4) :
-            print("problem with address 0x%x" % scan_bit)
-        scan_bit <<= 1
-    while True:
-        size = 64*1024
-        data = ''.join(chr(random.randint(0,255)) for _ in range(size))
+        read_data = read_ram(offset+scan_bit, 4)
+        print("at %x %x" % (offset+scan_bit, struct.unpack('I',read_data)[0]))
+        #  if struct.pack('I',testdata1) != read_data:
+        #      print("problem with address 0x%x" % scan_bit)
+        #  scan_bit <<= 1
+        scan_bit += 4
+    #  while True:
+    #      size = 64*1024
+    #      data = ''.join(chr(random.randint(0,255)) for _ in range(size))
 
-        print("offset=0x%x" % offset)
+    #      print("offset=0x%x" % offset)
 
-        write_ram(offset, data, True)
-        # raw_input("Press Enter to continue...")
-        recv = read_ram(offset, size, True)
+    #      write_ram(offset, data, True)
+    #      # raw_input("Press Enter to continue...")
+    #      recv = read_ram(offset, size, True)
 
 
-        if data != recv:
-            print(binascii.hexlify(data))
-            print(binascii.hexlify(recv))
-            for x in range(size):
-                if data[x] != recv[x]:
-                    print("%x!=%x @ 0x%x" % (ord(data[x]),ord(recv[x]),x))
-            break
-        offset += size
-        offset &= 0x80000000+RAM_SIZE-1
+    #      if data != recv:
+    #          print(binascii.hexlify(data))
+    #          print(binascii.hexlify(recv))
+    #          for x in range(size):
+    #              if data[x] != recv[x]:
+    #                  print("%x!=%x @ 0x%x" % (ord(data[x]),ord(recv[x]),x))
+    #          break
+    #      offset += size
+    #      offset &= 0x80000000+RAM_SIZE-1
 
 def read_flash(offset, size):
     # write_ram(FLASH_BASE, "\x20\x00\x00\x00")
@@ -394,7 +398,7 @@ if __name__ == "__main__":
         usage()
         sys.exit(2)
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hs:b:t:p:r:l:fg:", ["help", "serial=", "baud=", "bin=", "test=", "term", "size=", "run="])
+        opts, args = getopt.getopt(sys.argv[1:], "hs:b:t:p:r:l:fg:c:", ["help", "serial=", "baud=", "bin=", "test=", "term", "size=", "run="])
     except getopt.GetoptError as e:
         usage()
         sys.exit(2)
@@ -403,6 +407,7 @@ if __name__ == "__main__":
     prog_file = None
     load_file = None
     read_file = None
+    read_mem_to_file = None
     read_size = FLASH_SIZE
     file_binary = False
     binary_base = 0
@@ -430,6 +435,8 @@ if __name__ == "__main__":
             read_size = string2number(arg)
         elif opt in ('-l'):
             load_file = arg
+        elif opt in ('-c'):
+            read_mem_to_file = arg
         elif opt in ('-f'):
             SERIAL_DELAY=0
         elif opt in ('--term'):
@@ -472,7 +479,10 @@ if __name__ == "__main__":
                 load_elf_and_run(f)
             else:
                 load_binary_file(f, binary_base)
-
+    if read_mem_to_file:
+        with open(read_mem_to_file, 'wb') as f:
+            f.write(read_ram(0, read_size, True))
+        sys.exit(0)
 
     if go:
         go_ram(go_addr)

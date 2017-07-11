@@ -15,12 +15,12 @@
 
 `include "cp0_def.vh"
 
-`ifdef START_FROM_RAM
+//`ifdef START_FROM_RAM
+//`define SYSTEM_STARTUP_ADDR	32'h80000000
+//`else
+//`define SYSTEM_STARTUP_ADDR	32'h90000000
+//`endif
 `define SYSTEM_STARTUP_ADDR	32'h80000000
-`else
-`define SYSTEM_STARTUP_ADDR	32'h90000000
-`endif
-// `define SYSTEM_STARTUP_ADDR	32'h80000000
 
 // vim: ft=verilog
 

@@ -199,27 +199,31 @@ assign vga_clk = clk_in;
 //assign vga_pixel = vga_color_out;
 //assign vga_de = vga_data_en1 
 wire [31:0] test_mmu_instr_addr;
+assign leds[15:0] = test_mmu_instr_addr[15:0];
 
+wire rst, clk_manual;
+assign rst = ~touch_btn[4];
+assign clk_manual = touch_btn[5];
 armcpu wtfcpu(
     .clk50M(clk_in),
-    .rst_key(touch_btn[3]),
-    .clk_manual(touch_btn[5]),
+    .rst_key(rst),
+    .clk_manual(clk_manual),
     .segdisp0({leds[23:22],leds[19:17],leds[20],leds[21]}),
     .segdisp1({leds[31:30],leds[27:25],leds[28],leds[29]}),
     
-    .led(leds[15:0]),
+    //.led(leds[15:0]),
     .params(dip_sw),
     
     .baseram_addr(base_ram_addr),
     .baseram_data(base_ram_data),
-    .baseram_ce(~base_ram_ce_n),
-    .baseram_oe(~base_ram_oe_n),
-    .baseram_we(~base_ram_we_n),
+    .baseram_ce(base_ram_ce_n),
+    .baseram_oe(base_ram_oe_n),
+    .baseram_we(base_ram_we_n),
     
     .extram_addr(ext_ram_addr),
     .extram_data(ext_ram_data),
-    .extram_ce(~ext_ram_ce_n),
-    .extram_oe(~ext_ram_oe_n),
+    .extram_ce(ext_ram_ce_n),
+    .extram_oe(ext_ram_oe_n),
     .extram_we(~ext_ram_we_n),
     
     .com_TxD(txd),
@@ -227,16 +231,9 @@ armcpu wtfcpu(
     
     .flash_addr({0,flash_address}),
     .flash_data(flash_data),
- //	  flash_byte,
-//    flash_ce,
-//    2'b0,    // ce1 ce2
-//    flash_oe,
-//    flash_rp,
-//    flash_vpen,
-//    flash_we};
     .flash_ctl({~flash_byte_n,flash_ce, 2'bZZ,
         ~flash_oe_n,~flash_rp_n,flash_vpen,~flash_we_n}),
-    
+  
     .vga_color_out(vga_pixel),
     .vga_hsync(vga_hsync),
     .vga_vsync(vga_vsync),
@@ -247,6 +244,5 @@ armcpu wtfcpu(
     .kbd_data(0),
     .test_mmu_instr_addr(test_mmu_instr_addr)
 );
-
 
 endmodule

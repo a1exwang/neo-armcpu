@@ -180,6 +180,6 @@ module cpu(
 		.dev_mem_is_write(dev_mem_is_write),
 		.dev_mem_busy(dev_mem_busy));
 
-    assign test_mmu_instr_addr = mmu_instr_addr;
+    assign test_mmu_instr_addr = {16'b0,mmu_instr_data[31:24],mmu_instr_addr[7:0]};
 endmodule
 

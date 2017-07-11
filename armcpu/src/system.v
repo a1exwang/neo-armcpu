@@ -71,8 +71,9 @@ module system
 		.dev_mem_data_in(data_from_mem),
 		.dev_mem_data_out(data_to_mem),
 		.dev_mem_is_write(mem_is_write),
-		.dev_mem_busy(mem_busy),
-		.test_mmu_instr_addr(test_mmu_instr_addr));
+		.dev_mem_busy(mem_busy)
+		//.test_mmu_instr_addr(test_mmu_instr_addr)
+		);
 
 	phy_mem_ctrl umem(.clk50M(clk50M), .rst(rst),
 		.is_write(mem_is_write), .addr(mem_addr),
@@ -126,6 +127,6 @@ module system
 		.vsync(vga_vsync),
 		.de(vga_de));
 		
-
+    assign test_mmu_instr_addr = {16'b0,baseram_data[31:24],baseram_addr[7:0]};
 endmodule
 
