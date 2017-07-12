@@ -33,9 +33,25 @@
 
 - TODOs
   - 搞清楚新板子内存信号的定义
-  - 解决 VGA 在
+  - 解决 VGA 高频率时抖动黑屏问题
+
+#### 2017.07.12
+- VGA 方向
+  - 暂时先用低频率凑合
+- 键盘方向
+  - 先写了一个用 touch_btn 控制的键盘, 测通后再弄 USB
+- ucore 方向
+  - 能进入 ucore 了, 但是 kernel panic, invalid pa
+  - 怀疑是不是频率太低导致的, 先用高频率时钟启动, 等一会之后再将始终拨慢, 成功进入 Shell, 键盘也可以工作 (这些逗号是用 touch_btn 输入的, 字符在代码里写死了是逗号, >__<)
+    ![s1](screenshots/neo_ucore_shell.jpg)
+
+- TODOs
+  - VGA, 让 VGA 再高频率下可以运行
+  - 键盘, 支持 USB 键盘
+  - ucore, 应该不需要有太大修改了
+  - 可以试着用一下 Vivado ILA 调试
 
 ## Long Term Goals
 - ~~修改 armcpu 能在新板子上有 VGA 显示~~
-- 先用 verilog 写一个假的键盘, 用拨码开关控制, 能在 Shell 中打印出字符.
+- ~~先用 verilog 写一个假的键盘, 用拨码开关控制, 能在 Shell 中打印出字符.~~
 - 添加 USB 键盘支持

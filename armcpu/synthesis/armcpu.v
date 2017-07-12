@@ -44,7 +44,8 @@ module armcpu(
 	input kbd_enb_hi,
 	input kbd_enb_lo,
 	input [3:0] kbd_data,
-	output [31:0] test_mmu_instr_addr);
+	output [31:0] test_mmu_instr_addr,
+	input key);
 
 	// ------------------------------------------------------------------
 
@@ -136,13 +137,18 @@ module armcpu(
 	digseg_driver useg0(.data(monitor_data[3:0]), .seg(segdisp0));
 	digseg_driver useg1(.data(monitor_data[7:4]), .seg(segdisp1));
 
-	ps2_drv ups2drv(.clk(clk50M), .rst(rst),
+//	ps2_drv ups2drv(.clk(clk50M), .rst(rst),
+//		.int_ack(kbd_int_ack),
+//		.int_req(kbd_int_req),
+//		.kbd_ascii(kbd_ascii),
+//		.kbd_enb_hi(kbd_enb_hi),
+//		.kbd_enb_lo(kbd_enb_lo),
+//		.kbd_data(kbd_data));
+	fake_kb ups2drv(.clk(clk50M), .rst(rst),
 		.int_ack(kbd_int_ack),
 		.int_req(kbd_int_req),
 		.kbd_ascii(kbd_ascii),
-		.kbd_enb_hi(kbd_enb_hi),
-		.kbd_enb_lo(kbd_enb_lo),
-		.kbd_data(kbd_data));
+		.key(key));
 
 endmodule
 

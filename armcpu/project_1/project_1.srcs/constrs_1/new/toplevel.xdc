@@ -1,23 +1,23 @@
 #Clock
-set_property -dict {PACKAGE_PIN D18 IOSTANDARD LVCMOS33} [get_ports clk_in] ;#50MHz main clock in
-set_property -dict {PACKAGE_PIN C18 IOSTANDARD LVCMOS33} [get_ports clk_uart_in] ;#11.0592MHz clock for UART
+set_property -dict {PACKAGE_PIN D18 IOSTANDARD LVCMOS33} [get_ports clk_in]
+set_property -dict {PACKAGE_PIN C18 IOSTANDARD LVCMOS33} [get_ports clk_uart_in]
 set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets clk_uart_in_IBUF]
 
 #Touch Button
-set_property IOSTANDARD LVCMOS33 [get_ports touch_btn[*]]
-set_property PACKAGE_PIN J19 [get_ports touch_btn[0]] ;#BTN1
-set_property PACKAGE_PIN E25 [get_ports touch_btn[1]] ;#BTN2
-set_property PACKAGE_PIN F23 [get_ports touch_btn[2]] ;#BTN3
-set_property PACKAGE_PIN E23 [get_ports touch_btn[3]] ;#BTN4
-set_property PACKAGE_PIN H19 [get_ports touch_btn[4]] ;#BTN5
-set_property PACKAGE_PIN F22 [get_ports touch_btn[5]] ;#BTN6
+set_property IOSTANDARD LVCMOS33 [get_ports {touch_btn[*]}]
+set_property PACKAGE_PIN J19 [get_ports {touch_btn[0]}]
+set_property PACKAGE_PIN E25 [get_ports {touch_btn[1]}]
+set_property PACKAGE_PIN F23 [get_ports {touch_btn[2]}]
+set_property PACKAGE_PIN E23 [get_ports {touch_btn[3]}]
+set_property PACKAGE_PIN H19 [get_ports {touch_btn[4]}]
+set_property PACKAGE_PIN F22 [get_ports {touch_btn[5]}]
 
 #required if touch_btn[4] used as manual clock source
-set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets touch_btn_IBUF[4]]
+set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets {touch_btn_IBUF[4]}]
 
 #UART
-set_property -dict {IOSTANDARD LVCMOS33 PACKAGE_PIN L19} [get_ports txd] ;#GPIO5
-set_property -dict {IOSTANDARD LVCMOS33 PACKAGE_PIN K21} [get_ports rxd] ;#GPIO6
+set_property -dict {IOSTANDARD LVCMOS33 PACKAGE_PIN L19} [get_ports txd]
+set_property -dict {IOSTANDARD LVCMOS33 PACKAGE_PIN K21} [get_ports rxd]
 
 #USB
 set_property -dict {PACKAGE_PIN K3 IOSTANDARD LVCMOS33} [get_ports sl811_a0]
@@ -338,4 +338,7 @@ set_property PACKAGE_PIN U16 [get_ports ext_ram_we_n]
 
 set_property CFGBVS VCCO [current_design]
 set_property CONFIG_VOLTAGE 3.3 [current_design]
+
+
+connect_debug_port u_ila_1/probe0 [get_nets [list {wtfcpu/kbd_ascii[6]}]]
 

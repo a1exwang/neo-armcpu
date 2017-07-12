@@ -224,7 +224,7 @@ armcpu wtfcpu(
     .extram_data(ext_ram_data),
     .extram_ce(ext_ram_ce_n),
     .extram_oe(ext_ram_oe_n),
-    .extram_we(~ext_ram_we_n),
+    .extram_we(ext_ram_we_n),
     
     .com_TxD(txd),
     .com_RxD(rxd),
@@ -242,7 +242,8 @@ armcpu wtfcpu(
     .kbd_enb_hi(0),
     .kbd_enb_lo(0),
     .kbd_data(0),
-    .test_mmu_instr_addr(test_mmu_instr_addr)
+    .test_mmu_instr_addr(test_mmu_instr_addr),
+    .key(touch_btn[3])
 );
 
 endmodule
