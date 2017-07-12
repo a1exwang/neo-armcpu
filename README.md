@@ -38,6 +38,7 @@
 #### 2017.07.12
 - VGA 方向
   - 暂时先用低频率凑合
+  - Vivado 里加上 timing constraints 50MHz, VGA能成功在 50MHz 显示了, 但是结果是一下出来, 而不是一行一行出来
 - 键盘方向
   - 先写了一个用 touch_btn 控制的键盘, 测通后再弄 USB
 - ucore 方向
@@ -46,12 +47,16 @@
     ![s1](screenshots/neo_ucore_shell.jpg)
 
 - TODOs
-  - VGA, 让 VGA 再高频率下可以运行
-  - 键盘, 支持 USB 键盘
+  - VGA, 一下出来的 bug
+  - 键盘, 支持 USB 键盘, 研究一下 USB HID Protocol
   - ucore, 应该不需要有太大修改了
+  - flash, 之后试一下从 Flash 启动
   - 可以试着用一下 Vivado ILA 调试
 
 ## Long Term Goals
 - ~~修改 armcpu 能在新板子上有 VGA 显示~~
 - ~~先用 verilog 写一个假的键盘, 用拨码开关控制, 能在 Shell 中打印出字符.~~
 - 添加 USB 键盘支持
+- 调研 armcpu 上的那些扩展怎么跑起来
+  - 图片渲染
+  - 贪吃蛇

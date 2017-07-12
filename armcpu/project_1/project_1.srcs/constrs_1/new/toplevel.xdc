@@ -342,3 +342,4 @@ set_property CONFIG_VOLTAGE 3.3 [current_design]
 
 connect_debug_port u_ila_1/probe0 [get_nets [list {wtfcpu/kbd_ascii[6]}]]
 
+create_clock -period 20.000 -name clk_in -waveform {0.000 10.000} [get_ports clk_in]
