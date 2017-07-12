@@ -41,6 +41,9 @@
   - Vivado 里加上 timing constraints 50MHz, VGA能成功在 50MHz 显示了, 但是结果是一下出来, 而不是一行一行出来
 - 键盘方向
   - 先写了一个用 touch_btn 控制的键盘, 测通后再弄 USB
+  - 研究了一下 sl811 的用法, 觉得需要调研一下 sl811 在 Linux 下的驱动和 USB HID 协议. 有两条路线.
+    - 可以试着把 Linux 下的 sl811 驱动移植到 ucore, 这样, 在硬件层面不需要做太多事情.
+    - 可以试着用硬件实现 sl811 驱动的一个子集 (只需要读键盘输入就好了), 这样不用改软件.
 - ucore 方向
   - 能进入 ucore 了, 但是 kernel panic, invalid pa
   - 怀疑是不是频率太低导致的, 先用高频率时钟启动, 等一会之后再将始终拨慢, 成功进入 Shell, 键盘也可以工作 (这些逗号是用 touch_btn 输入的, 字符在代码里写死了是逗号, >__<)
@@ -48,7 +51,7 @@
 
 - TODOs
   - VGA, 一下出来的 bug
-  - 键盘, 支持 USB 键盘, 研究一下 USB HID Protocol
+  - 键盘, 支持 USB 键盘
   - ucore, 应该不需要有太大修改了
   - flash, 之后试一下从 Flash 启动
   - 可以试着用一下 Vivado ILA 调试
