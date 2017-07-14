@@ -6,8 +6,8 @@ override ON_FPGA ?= y
 
 V       := @
 
-GCCPREFIX:=mips-sde-elf-
-#GCCPREFIX ?= /home/guest/cpu/build-gcc/mips_gcc/bin/mips-sde-elf-
+# GCCPREFIX:=mips-linux-gnu-
+GCCPREFIX := /home/alexwang/pl/toolchains/mips-2012.03/bin/mips-sde-elf-
 
 # eliminate default suffix rules
 .SUFFIXES: .c .S .h
@@ -102,7 +102,8 @@ MAKEDEPEND = $(CLANG) -M $(CFLAGS) $(INCLUDES) -o $(DEPDIR)/$*.d $<
 
 .PHONY: all checkdirs clean
 
-all: checkdirs boot/loader.bin obj/ucore-kernel-initrd
+# all: checkdirs boot/loader.bin obj/ucore-kernel-initrd
+all: checkdirs obj/ucore-kernel-initrd
 
 $(shell mkdir -p $(DEP_DIR))
 
@@ -139,6 +140,7 @@ clean:
 	-rm -rf $(BUILD_DIR)
 	-rm -rf $(DEPDIR)
 	-rm -rf boot/loader.o boot/loader boot/loader.bin
+	-rm obj/ucore-kernel-initrd
 
 
 ifneq ($(MAKECMDGOALS),clean)

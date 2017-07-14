@@ -175,6 +175,27 @@ runit:
     return __exec(NULL, argv);
 }
 
+int fork_run_command(char *buffer) {
+  int ret;
+  printf("\r\n");
+  shcwd[0] = '\0';
+  int pid;
+  if ((pid = fork()) == 0) {
+    ret = runcmd(buffer);
+    exit(ret);
+  }
+  assert(pid >= 0);
+  if (waitpid(pid, &ret) == 0) {
+    if (ret == 0 && shcwd[0] != '\0') {
+      ret = 0;
+    }
+    if (ret != 0) {
+      printf("error: %d - %e\n", ret, ret);
+    }
+  }
+  return ret;
+}
+
 int
 main(int argc, char **argv) {
 	printf("user sh is running!!!\n");
@@ -192,24 +213,13 @@ main(int argc, char **argv) {
     //shcwd = malloc(BUFSIZE);
     assert(shcwd != NULL);
 
+    char *cmd1 = "ls";
+    int ret1 = fork_run_command(cmd1);
+    printf("%s (%d)\n", cmd1, ret1);
+
     char *buffer;
     while ((buffer = readline((interactive) ? "$ " : NULL)) != NULL) {
-        printf("\r\n");
-        shcwd[0] = '\0';
-        int pid;
-        if ((pid = fork()) == 0) {
-            ret = runcmd(buffer);
-            exit(ret);
-        }
-        assert(pid >= 0);
-        if (waitpid(pid, &ret) == 0) {
-            if (ret == 0 && shcwd[0] != '\0') {
-				ret = 0;
-            }
-            if (ret != 0) {
-                printf("error: %d - %e\n", ret, ret);
-            }
-        }
+      fork_run_command(buffer);
     }
     return 0;
 }

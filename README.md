@@ -56,6 +56,37 @@
   - flash, 之后试一下从 Flash 启动
   - 可以试着用一下 Vivado ILA 调试
 
+#### 2017.07.13
+- USB 键盘
+  - 首先看一下 sl811-hcd.c 里面发现 USB 设备的代码, 找到了一块简单的获取设备版本号的代码, 感觉可以先实现一下, 试着读出版本号, 写到串口
+  - 只要稍微修改实例读写串口就会挂, 发现是 PC 端读写串口不对, `echo/cat` 读写串口不靠谱, 赶快用 `screen /dev/ttyACM0 115200` 吧
+  - 尝试参照 sl811-hcd.c 和 sl811 的手册, 初始化 sl811, 设置中断模式, 在这上面浪费了一天, 感觉这条路不通(至少时间不允许), 打算先做串口虚拟键盘
+- TODOs
+  - USB 太复杂了, 如果遇到瓶颈感觉可以先用串口做一个一个虚拟键盘出来
+  - 想做虚拟键盘需要修改 ucore 需要看一下他们的 ucore 怎么 build
+    - 直接 make
+      - 遇到问题, 有几处路径的小问题, 改之
+      - 编译通过, 检查一下 gcc 生成的指令, `mipsel-linux-gnu-objdump -d ../ucore/obj/mm/vmm.o   | awk '{print $3}' | sort | uniq | grep -E "^[a-z]+\$"`, 对比他们之前生成的 ucore
+      - 发现多了 3 条指令 `lwl, lwr, bal`, 查了一下是用来做非对其访存的
+      - 用这条命令找到那些文件中多余了这些指令
+
+      ```
+      #!/bin/bash
+        for file in $(find obj -type f); do
+          if mipsel-linux-gnu-objdump -d $file   | awk '{print $3}' | sort | uniq | grep -E "^[a-z]+\$" | grep -E "lwl|lwr|bal" > /dev/null; then
+            echo "file: " $file
+          fi
+        done
+      ```
+      - 发现只有 user app 和 ramdisk.o 中有, 详细看一下 build 这两部分的 Makefile
+      - 结果换了 mips-sde-elf 工具链就好了
+
+#### 2017.07.14
+- 键盘
+  - 在 ucore 测试了通过串口写入 ASCII 码可以正常使用 shell
+  - 为了之后能稳定调试, 决定先解决 VGA 闪烁的 bug 和调通 Flash
+
+
 ## Long Term Goals
 - ~~修改 armcpu 能在新板子上有 VGA 显示~~
 - ~~先用 verilog 写一个假的键盘, 用拨码开关控制, 能在 Shell 中打印出字符.~~
@@ -63,3 +94,8 @@
 - 调研 armcpu 上的那些扩展怎么跑起来
   - 图片渲染
   - 贪吃蛇
+
+## Reference
+- [@jiakai 项目](https://git.net9.org/armcpu-devteam/armcpu)
+- [Linux sl811 Driver](https://github.com/torvalds/linux/blob/5924bbecd0267d87c24110cbe2041b5075173a25/drivers/usb/host/sl811-hcd.c)
+- [Cypress SL811HS Manual](http://www.cypress.com/file/126236/download)
