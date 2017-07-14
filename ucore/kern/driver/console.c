@@ -128,7 +128,6 @@ serial_proc_data(void) {
     return c;
 }
 
-
 void serial_int_handler(void *opaque)
 {
 #ifdef MACH_QEMU
@@ -137,25 +136,21 @@ void serial_int_handler(void *opaque)
     return ;
 #endif
   //int c = serial_proc_data();
-  int c = cons_getc(c);
+  volatile int c = cons_getc(c);
   extern void dev_stdin_write(char c);
   dev_stdin_write(c);
 
-  /* outw(SL811_CTRL, 0); */
-  /* __nop; */
-  /* __nop; */
-
-  outw(SL811_CTRL, 0x100 | c);
+  outw(SL811_CTRL, 0x100);
   __nop;
   __nop;
 
-  /* outw(SL811_CTRL, 0); */
-  /* __nop; */
-  /* __nop; */
+  outw(SL811_CTRL, c);
+  __nop;
+  __nop;
 
   c = inb(SL811_DATA);
 
-  dev_stdin_write(c);
+  kprintf("sl811_data %x\n", c);
 }
 
 void keyboard_int_handler()
