@@ -231,8 +231,8 @@ armcpu wtfcpu(
     
     .flash_addr({0,flash_address}),
     .flash_data(flash_data),
-    .flash_ctl({~flash_byte_n,flash_ce, 2'bZZ,
-        ~flash_oe_n,~flash_rp_n,flash_vpen,~flash_we_n}),
+    .flash_ctl({flash_byte_n,flash_ce, 2'bZZ,
+        flash_oe_n,flash_rp_n,flash_vpen,flash_we_n}),
   
     .vga_color_out(vga_pixel),
     .vga_hsync(vga_hsync),

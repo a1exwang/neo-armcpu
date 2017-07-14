@@ -48,7 +48,15 @@ module system
 	input kbd_int,
 	output kbd_int_ack,
 	input [7:0] kbd_data,
-	output [31:0] test_mmu_instr_addr);
+	output [31:0] test_mmu_instr_addr,
+	
+	// sl811 interface
+	inout [7:0] sl811_raw_data,
+    output sl811_a0,
+    output sl811_we_n,
+    output sl811_rd_n,
+    output sl811_cs_n,
+    output sl811_rst_n);
 
 	// ------------------------------------------------------------------
 
@@ -61,6 +69,11 @@ module system
 	wire [`VGA_ADDR_WIDTH-1:0] vga_write_addr;
 	wire [`VGA_DATA_WIDTH-1:0] vga_write_data;
 	wire vga_write_enable;
+	
+	wire [7:0] sl811_addr;
+	wire [7:0] sl811_data_sl2mem;
+	wire [7:0] sl811_data_mem2sl;
+	wire sl811_we, sl811_ce, sl811_rw;
 
 	cpu ucpu(.clk(clk_cpu), .clk_fast(clk50M), .rst(rst),
 
@@ -105,7 +118,13 @@ module system
 		.vga_write_enable(vga_write_enable),
 	
 		.kbd_data(kbd_data),
-		.kbd_int_ack(kbd_int_ack));
+		.kbd_int_ack(kbd_int_ack),
+		.sl811_addr(sl811_addr),
+        .sl811_data_in(sl811_data_sl2mem),
+        .sl811_data_out(sl811_data_mem2sl),
+        .sl811_rw(sl811_rw),
+        .sl811_we(sl811_we),
+        .sl811_ce(sl811_ce));
 
 
 	serial_port #(.CLK_FREQ(50000000)) ucom(
@@ -126,6 +145,21 @@ module system
 		.hsync(vga_hsync),
 		.vsync(vga_vsync),
 		.de(vga_de));
+    
+    sl811 usl811(.clk50M(clk50M),
+        .rst(rst),
+        .addr(sl811_addr),
+        .data_in(sl811_data_mem2sl),
+        .data_out(sl811_data_sl2mem),
+        .we(sl811_we),
+        .rw(sl811_rw),
+        .ce(sl811_ce),
+        .raw_data(sl811_raw_data),
+        .raw_a0(sl811_a0),
+        .raw_we_n(sl811_we_n),
+        .raw_rd_n(sl811_rd_n),
+        .raw_cs_n(sl811_cs_n),
+        .raw_rst_n(sl811_rst_n));
 		
     assign test_mmu_instr_addr = {16'b0,baseram_data[31:24],baseram_addr[7:0]};
 endmodule

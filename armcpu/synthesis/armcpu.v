@@ -45,7 +45,14 @@ module armcpu(
 	input kbd_enb_lo,
 	input [3:0] kbd_data,
 	output [31:0] test_mmu_instr_addr,
-	input key);
+	input key,
+	
+	inout [7:0] sl811_raw_data,
+    output sl811_a0,
+    output sl811_we_n,
+    output sl811_rd_n,
+    output sl811_cs_n,
+    output sl811_rst_n);
 
 	// ------------------------------------------------------------------
 
@@ -121,7 +128,14 @@ module armcpu(
 		.kbd_int(kbd_int_req),
 		.kbd_int_ack(kbd_int_ack),
 		.kbd_data(kbd_ascii),
-		.test_mmu_instr_addr(test_mmu_instr_addr));
+		.test_mmu_instr_addr(test_mmu_instr_addr),
+		
+		.sl811_raw_data(sl811_raw_data),
+        .sl811_a0(sl811_a0),
+        .sl811_we_n(sl811_we_n),
+        .sl811_rd_n(sl811_rd_n),
+        .sl811_cs_n(sl811_cs_n),
+        .sl811_rst_n(sl811_rst_n));
 
 	always @(posedge clk_cpu)
 		led[7:0] <= {cpu_speed[3:0], led[2:0], !led[2:0]};

@@ -74,6 +74,9 @@ outw(uint32_t port, uint32_t data) {
     *((volatile uintptr_t *) port) = data;
 }
 
+#define __nop \
+    { __asm__ __volatile__("nop"); }
+
 /* board specification */
 #define ISA_BASE        0xbfd00000
 #define COM1            (ISA_BASE+0x3F8)
@@ -82,7 +85,10 @@ outw(uint32_t port, uint32_t data) {
 #define TIMER0_IRQ       7
 
 #define KEYBOARD_IRQ    6
-#define KEYBOARD       0xaf000000
+#define KEYBOARD       0xaf000010
+
+#define SL811_CTRL     0xaf000000
+#define SL811_DATA     0xaf000004
 
 #endif /* !__LIBS_THUMIPS_H__ */
 

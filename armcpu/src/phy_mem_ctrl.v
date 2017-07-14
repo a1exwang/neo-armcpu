@@ -13,10 +13,13 @@
 
 `define SEGDISP_ADDR	32'h1FD00400	// 7-segment display monitor
 
+`define SL811_CTRL_ADDR	32'h0F000000	// {24'b0, sl811_reg}
+`define SL811_DATA_ADDR	32'h0F000004// {24'b0, sl811_read_data}
+
 `define VGA_ADDR_START	32'h1A000000
 `define VGA_ADDR_END	32'h1A096000
 
-`define KEYBOARD_ADDR	32'h0F000000
+`define KEYBOARD_ADDR	32'h0F00000F
 
 `define ADDR_IS_RAM(addr) ((addr & 32'h007FFFFF) == addr)
 `define ADDR_IS_FLASH(addr) (addr[31:24] == 8'h1E)
@@ -31,6 +34,9 @@
 
 `define FLASH_WRITE_WIDTH 4
 `define FLASH_WRITE_READ_RECOVERY 2
+
+`define SL811_WRITE_WIDTH 2
+`define SL811_WRITE_READ_RECOVERY 2
 
 // physical memory controller
 module phy_mem_ctrl(
@@ -81,7 +87,16 @@ module phy_mem_ctrl(
 
 	// ascii keyboard interface
 	input [7:0] kbd_data,
-	output reg kbd_int_ack);
+	output reg kbd_int_ack,
+	
+	// sl811 interface
+	input  [7:0] sl811_data_in,
+	output [7:0] sl811_data_out,
+	input  [7:0] sl811_addr,
+	output sl811_we,
+	output sl811_rw,
+	output sl811_ce
+	);
 
 	// ------------------------------------------------------------------
 
@@ -92,11 +107,12 @@ module phy_mem_ctrl(
 		end
 
 	reg [31:0] write_addr_latch, write_data_latch;
-	reg [1:0] state;
+	reg [3:0] state;
 	reg [3:0] write_cnt;
 	wire [3:0] write_cnt_next = write_cnt + 1'b1;
-	localparam READ = 2'b00,
-		WRITE_RAM = 2'b01, WRITE_FLASH = 2'b10, RECOVERY_READ = 2'b11;
+	localparam READ = 4'h0,
+		WRITE_RAM = 4'h1, WRITE_FLASH = 4'h2, 
+		WRITE_SL811_CTRL = 4'h3, RECOVERY_READ = 4'hF;
 
 	assign busy = (state != READ || is_write);
 
@@ -107,7 +123,9 @@ module phy_mem_ctrl(
 			addr_is_segdisp = (addr == `SEGDISP_ADDR),
 			addr_is_rom = `ADDR_IS_ROM(addr),
 			addr_is_vga = `ADDR_IS_VGA(addr),
-			addr_is_keyboard = (addr == `KEYBOARD_ADDR);
+			addr_is_keyboard = (addr == `KEYBOARD_ADDR),
+			addr_is_sl811_ctrl = (addr == `SL811_CTRL_ADDR),
+			addr_is_sl811_data = (addr == `SL811_DATA_ADDR);
 
 	wire [31:0] addr_vga_offset = addr - `VGA_ADDR_START;
 
@@ -125,6 +143,10 @@ module phy_mem_ctrl(
 		flash_vpen,
 		flash_we};
 
+	assign sl811_addr = sl811_we ? write_addr_latch[7:0] : addr[7:0];
+    assign sl811_data_out = write_data_latch[7:0];
+    assign sl811_we = (state == WRITE_SL811_CTRL);
+	assign sl811_rw = write_data_latch[8];
 	
 	wire [`ROM_ADDR_WIDTH-1:0] rom_addr = addr[`ROM_ADDR_WIDTH-1:0];
 	reg [31:0] rom_data;
@@ -169,13 +191,15 @@ module phy_mem_ctrl(
 	always @(*) begin
 		data_out = 0;
 		case ({addr_is_ram, addr_is_com_data, addr_is_com_stat,
-				addr_is_flash, addr_is_rom, addr_is_keyboard})
-			6'b100000: data_out = ram_selector ? extram_data : baseram_data;
-			6'b010000: data_out = {24'b0, com_data_in};
-			6'b001000: data_out = {30'b0, com_read_ready, com_write_ready};
-			6'b000100: data_out = {16'b0, flash_data};
-			6'b000010: data_out = rom_data;
-			6'b000001: data_out = {24'b0, kbd_data};
+				addr_is_flash, addr_is_rom, addr_is_keyboard, addr_is_sl811_ctrl, addr_is_sl811_data})
+			8'b10000000: data_out = ram_selector ? extram_data : baseram_data;
+			8'b01000000: data_out = {24'b0, com_data_in};
+			8'b00100000: data_out = {30'b0, com_read_ready, com_write_ready};
+			8'b00010000: data_out = {16'b0, flash_data};
+			8'b00001000: data_out = rom_data;
+			8'b00000100: data_out = {24'b0, kbd_data};
+			8'b00000010: data_out = 0;
+			8'b00000001: data_out = {sl811_data_in};
 		endcase
 	end
 
@@ -201,13 +225,15 @@ module phy_mem_ctrl(
 				write_addr_latch <= addr;
 				write_data_latch <= data_in;
 				write_cnt <= 0;
-				case ({addr_is_ram, addr_is_com_data, addr_is_flash,
+				case ({addr_is_sl811_ctrl, addr_is_sl811_data,
+				        addr_is_ram, addr_is_com_data, addr_is_flash,
 						addr_is_segdisp, addr_is_vga})
-					5'b10000: state <= WRITE_RAM;
-					5'b01000: enable_com_write <= 1;
-					5'b00100: state <= WRITE_FLASH;
-					5'b00010: segdisp <= data_in;
-					5'b00001: begin
+				    7'b1000000: state <= WRITE_SL811_CTRL;
+					7'b0010000: state <= WRITE_RAM;
+					7'b0001000: enable_com_write <= 1;
+					7'b0000100: state <= WRITE_FLASH;
+					7'b0000010: segdisp <= data_in;
+					7'b0000001: begin
 						vga_write_addr <= addr_vga_offset[`VGA_ADDR_WIDTH+1:2];
 						vga_write_data <= data_in[7:0];
 						vga_write_enable <= 1;
@@ -226,6 +252,11 @@ module phy_mem_ctrl(
 				if (write_cnt_next ==
 						`FLASH_WRITE_READ_RECOVERY + `FLASH_WRITE_WIDTH)
 					state <= RECOVERY_READ;
+		    end
+			WRITE_SL811_CTRL: begin
+                write_cnt <= write_cnt_next;
+                if (write_cnt_next == `SL811_WRITE_READ_RECOVERY + `SL811_WRITE_WIDTH)
+                    state <= RECOVERY_READ;
 			end
 			RECOVERY_READ:
 				state <= READ;
