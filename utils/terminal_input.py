@@ -4,7 +4,7 @@
 # $Date: Thu Dec 12 02:16:46 2013 +0800
 # $Author: Xinyu Zhou <zxytim[at]gmail[dot]com>
 
-DEVICE = '/dev/ttyUSB0'
+DEVICE = '/dev/ttyACM0'
 
 import serial
 import sys

@@ -140,17 +140,17 @@ void serial_int_handler(void *opaque)
   extern void dev_stdin_write(char c);
   dev_stdin_write(c);
 
-  outw(SL811_CTRL, 0x100);
-  __nop;
-  __nop;
+  /* outw(SL811_CTRL, 0x100); */
+  /* __nop; */
+  /* __nop; */
 
-  outw(SL811_CTRL, c);
-  __nop;
-  __nop;
+  /* [> outw(SL811_CTRL, c); <] */
+  /* [> __nop; <] */
+  /* [> __nop; <] */
 
-  c = inb(SL811_DATA);
+  /* c = inb(SL811_DATA); */
 
-  kprintf("sl811_data %x\n", c);
+  /* kprintf("sl811_data %x\n", c); */
 }
 
 void keyboard_int_handler()

@@ -10,7 +10,7 @@ WRITER_MUTE_STR = '`'
 TERMINAL_OUTUT_MAGIC = 't'
 FETCH_MAGIC = 'r'
 
-DEVICE = '/dev/ttyUSB0'
+DEVICE = '/dev/ttyACM0'
 
 from terminal_input import getch
 
@@ -21,9 +21,6 @@ import time
 import send_file
 import os
 import os.path
-
-if os.getenv('DEVICE'):
-    DEVICE = os.getenv('DEVICE')
 
 ser = serial.Serial(DEVICE, 115201,
         stopbits=2, parity=serial.PARITY_NONE)

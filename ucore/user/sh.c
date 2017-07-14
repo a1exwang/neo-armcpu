@@ -196,9 +196,21 @@ int fork_run_command(char *buffer) {
   return ret;
 }
 
+void sl811_write(unsigned char reg, unsigned char data) {
+    volatile int *sl811_ctrl = (int*)0xaf000000;
+    *sl811_ctrl = reg;
+    *sl811_ctrl = data;
+}
+unsigned char sl811_read(unsigned char reg) {
+    volatile int *sl811_ctrl = (int*)0xaf000000;
+    volatile const int *sl811_data = (const int*)0xaf000004;
+    *sl811_ctrl = reg;
+    return *sl811_data;
+}
+
 int
 main(int argc, char **argv) {
-	printf("user sh is running!!!\n");
+    printf("user sh is running!!!\n");
     int ret, interactive = 1;
     if (argc == 2) {
         if ((ret = reopen(0, argv[1], O_RDONLY)) != 0) {
@@ -216,6 +228,8 @@ main(int argc, char **argv) {
     char *cmd1 = "ls";
     int ret1 = fork_run_command(cmd1);
     printf("%s (%d)\n", cmd1, ret1);
+
+    printf("sl811[5] %x\n", sl811_read(0x5));
 
     char *buffer;
     while ((buffer = readline((interactive) ? "$ " : NULL)) != NULL) {
