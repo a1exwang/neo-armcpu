@@ -145,7 +145,7 @@ module phy_mem_ctrl(
     assign sl811_data_out = write_data_latch[7:0];
     assign sl811_we = ~(state == WRITE_SL811_CTRL);
 	assign sl811_rw = write_data_latch[8];
-	assign sl811_ce = 1;
+	assign sl811_ce = 0;
 	
 	wire [`ROM_ADDR_WIDTH-1:0] rom_addr = addr[`ROM_ADDR_WIDTH-1:0];
 	reg [31:0] rom_data;
@@ -198,7 +198,7 @@ module phy_mem_ctrl(
 			8'b00001000: data_out = rom_data;
 			8'b00000100: data_out = {24'b0, kbd_data};
 			8'b00000010: data_out = 0;
-			8'b00000001: data_out = {sl811_data_in};
+			8'b00000001: data_out = {24'b0, sl811_data_in};
 		endcase
 	end
 

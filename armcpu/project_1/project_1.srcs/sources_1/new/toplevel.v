@@ -125,12 +125,7 @@ output wire vga_de;
 /////////////////////////////////////////////////////////
 
 // USB
-assign sl811_a0 = 0;
-assign sl811_we_n = 0;
-assign sl811_rd_n = 0;
-assign sl811_cs_n = 0;
-assign sl811_rst_n = 0;
-assign sl811_drq = 0;
+
 
 //DM9000 Ethernet controller signals
 assign dm9k_cmd = 0;
@@ -243,7 +238,14 @@ armcpu wtfcpu(
     .kbd_enb_lo(0),
     .kbd_data(0),
     .test_mmu_instr_addr(test_mmu_instr_addr),
-    .key(touch_btn[3])
+    .key(touch_btn[3]),
+    
+    .sl811_a0(sl811_a0),
+    .sl811_we_n(sl811_we_n),
+    .sl811_rd_n(sl811_rd_n),
+    .sl811_cs_n(sl811_cs_n),
+    .sl811_rst_n(sl811_rst_n),
+    .sl811_raw_data(sl811_data)
 );
 
 endmodule

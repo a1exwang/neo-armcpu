@@ -136,8 +136,8 @@ module sl811(
         end
     end
     
-    assign raw_cs_n = 0;
-    assign raw_rst_n = 1;
+    assign raw_cs_n = ce;
+    assign raw_rst_n = rst;
     assign raw_data = writing_to_sl811 ? raw_data_out : 8'bZZZZZZZZ;
     assign data_out = data_out_buf;
     
