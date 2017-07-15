@@ -23,7 +23,6 @@
 module sl811(
     input clk50M,
     input rst,
-    input [7:0] addr,
     input [7:0] data_in,
     output wire[7:0] data_out,
     input rw, // 0 for read, 1 for write
@@ -40,69 +39,97 @@ module sl811(
         NEXT_ADDR = 0, NEXT_DATA = 1;
     
     reg [7:0] counter = 8'h41;
-    reg next_op = NEXT_READ;
     reg addr_or_data = NEXT_ADDR;
 
     reg [7:0] raw_data_out;
     reg writing_to_sl811;
-    reg read_flag_we = 0, read_flag_clk = 0;
+    reg action_flag_we = 0, action_flag_clk = 0;
+    reg action;
+    parameter READ = 0, WRITE = 1;
     
-    always @(posedge we) begin
-        read_flag_we = ~read_flag_we;
+    always @(negedge we) begin
+        action_flag_we = ~action_flag_we;
         if (addr_or_data == NEXT_ADDR) begin
             // Currently writing address
             if (rw == 0) begin
                 // Next read
-                next_op = NEXT_READ;
                 addr_or_data = NEXT_ADDR;
+                action = READ;
             end else begin
-                next_op = NEXT_WRITE;
                 addr_or_data = NEXT_DATA;
+                action = WRITE;
             end
-        end else begin
+        end else begin // NEXT_DATA
             // Currently writing data
             counter = data_in;
             addr_or_data = NEXT_ADDR;
+            action = WRITE;
         end
     end
     
     reg [7:0] data_out_buf;
     reg [3:0] state;
     reg read_in_this_cycle_done;
-    parameter WAIT = 4'h0, READING = 4'h1, READING_SAVE = 4'h2, READING_RECOVER = 4'h3;
+    parameter WAIT = 4'h0, READING = 4'h1, READING_SAVE = 4'h2, 
+        READING_RECOVER = 4'h3, BEFORE_READING = 4'h4;
+    
+    reg [3:0] cnt_before_reading = 0;
     
     always @(posedge clk50M) begin
         if (rst) begin
             state = 4'h0;
+            data_out_buf = 8'h0;
         end else begin
             case (state)
                 WAIT: begin
-                    // Waiting
-                    if (read_flag_we != read_flag_clk) begin
-                        // Write addr
-                        raw_data_out = data_in;
-                        writing_to_sl811 = 1;
-                        raw_we_n = 0;
-                        raw_rd_n = 1;
-                        state = READING;
-                        read_flag_clk = read_flag_we;
-                    end
-
                     writing_to_sl811 = 0;
                     raw_we_n = 1;
                     raw_rd_n = 1;
                     state = WAIT;
+                    // Waiting
+                    if (action_flag_we != action_flag_clk) begin
+                        raw_data_out = data_in;
+                        writing_to_sl811 = 1;
+                        raw_we_n = 0;
+                        raw_rd_n = 1;
+                        
+                        action_flag_clk = action_flag_we;
+                        if (action == READ) begin
+                            // Write addr for read op
+                            state = BEFORE_READING;
+                            raw_a0 = 0;
+                        end else begin
+                            // Write addr/data for write op
+                            state = WAIT;
+                            if (addr_or_data == NEXT_ADDR)
+                                // Write data for write op
+                                raw_a0 = 1;    
+                            else
+                                raw_a0 = 0;
+                        end
+                    end
+                end
+                BEFORE_READING: begin
+                    if (cnt_before_reading == 5) begin
+                        cnt_before_reading = 0;
+                        state = READING;
+                    end else begin
+                        cnt_before_reading = cnt_before_reading + 1;
+                    end
                 end
                 READING: begin
                     // Read data
                     writing_to_sl811 = 0;
                     raw_we_n = 1;
                     raw_rd_n = 0;
+                    raw_a0 = 1;
+                    data_out_buf = raw_data;
                     state = READING_SAVE;
                 end
                 READING_SAVE: begin
                     // Wait for data to be stable
                     data_out_buf = raw_data;
+                    raw_a0 = 1;
                     state = WAIT;
                 end
             endcase           

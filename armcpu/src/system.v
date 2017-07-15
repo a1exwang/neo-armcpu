@@ -70,7 +70,6 @@ module system
 	wire [`VGA_DATA_WIDTH-1:0] vga_write_data;
 	wire vga_write_enable;
 	
-	wire [7:0] sl811_addr;
 	wire [7:0] sl811_data_sl2mem;
 	wire [7:0] sl811_data_mem2sl;
 	wire sl811_we, sl811_ce, sl811_rw;
@@ -119,7 +118,6 @@ module system
 	
 		.kbd_data(kbd_data),
 		.kbd_int_ack(kbd_int_ack),
-		.sl811_addr(sl811_addr),
         .sl811_data_in(sl811_data_sl2mem),
         .sl811_data_out(sl811_data_mem2sl),
         .sl811_rw(sl811_rw),
@@ -148,7 +146,6 @@ module system
     
     sl811 usl811(.clk50M(clk50M),
         .rst(rst),
-        .addr(sl811_addr),
         .data_in(sl811_data_mem2sl),
         .data_out(sl811_data_sl2mem),
         .we(sl811_we),

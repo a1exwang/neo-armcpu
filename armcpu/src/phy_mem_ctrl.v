@@ -35,8 +35,8 @@
 `define FLASH_WRITE_WIDTH 4
 `define FLASH_WRITE_READ_RECOVERY 2
 
-`define SL811_WRITE_WIDTH 2
-`define SL811_WRITE_READ_RECOVERY 2
+`define SL811_WRITE_WIDTH 5
+`define SL811_WRITE_READ_RECOVERY 4
 
 // physical memory controller
 module phy_mem_ctrl(
@@ -92,7 +92,6 @@ module phy_mem_ctrl(
 	// sl811 interface
 	input  [7:0] sl811_data_in,
 	output [7:0] sl811_data_out,
-	input  [7:0] sl811_addr,
 	output sl811_we,
 	output sl811_rw,
 	output sl811_ce
@@ -143,10 +142,10 @@ module phy_mem_ctrl(
 		flash_vpen,
 		flash_we};
 
-	assign sl811_addr = sl811_we ? write_addr_latch[7:0] : addr[7:0];
     assign sl811_data_out = write_data_latch[7:0];
-    assign sl811_we = (state == WRITE_SL811_CTRL);
+    assign sl811_we = ~(state == WRITE_SL811_CTRL);
 	assign sl811_rw = write_data_latch[8];
+	assign sl811_ce = 1;
 	
 	wire [`ROM_ADDR_WIDTH-1:0] rom_addr = addr[`ROM_ADDR_WIDTH-1:0];
 	reg [31:0] rom_data;
