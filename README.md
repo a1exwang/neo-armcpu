@@ -100,6 +100,8 @@
   - 发现了时序上的 bug 和 rst_n 写反了, 改过来之后能顺利读 HWREV 寄存器, REV = 2
   - ![hwreg](screenshots/neo_ucore_sl811.jpg)
   - 开始调试写 SL811 寄存器
+  - 终于调通了读写 SL811 寄存器, 用了 Vivado ILA 看板子上信号, 发现写入时的波形和读相同, 发现是 ucore 里写的时候忘设了一个 bit
+  - 开始调研 USB 协议
 
 ## Long Term Goals
 - ~~修改 armcpu 能在新板子上有 VGA 显示~~
