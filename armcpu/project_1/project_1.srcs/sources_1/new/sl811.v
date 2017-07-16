@@ -70,15 +70,26 @@ module sl811(
     reg [7:0] data_out_buf;
     reg [3:0] state;
     reg read_in_this_cycle_done;
-    parameter WAIT = 4'h0, READING = 4'h1, READING_SAVE = 4'h2, 
-        READING_RECOVER = 4'h3, BEFORE_READING = 4'h4;
+    parameter WAIT = 4'h0, 
+        READING = 4'h1, READING_SAVE = 4'h2, 
+        READING_RECOVER = 4'h3, 
+        WRITING_ADDR_FOR_READ = 4'h4, WRITE_ADDR_HOLD_A0_DATA = 4'h5,
+        WRITING_ADDR_FOR_READ_WR_HOLD = 4'h6,
+        
+        WRITING_HOLD = 4'h7, WRITING_A0 = 4'h8;
     
-    reg [3:0] cnt_before_reading = 0;
+    reg [3:0] cnt_wafr = 0;
+    reg [3:0] cnt_reading = 0;
+    reg [3:0] cnt_reading_recover = 0;
+    reg [3:0] cnt_writing_hold = 0;
+    reg [3:0] cnt_writing_a0 = 0;
+    reg [3:0] cnt_before_reading1 = 0;
+    reg [3:0] cnt_wafrwh = 0;
     
     always @(posedge clk50M) begin
         if (rst) begin
             state = 4'h0;
-            data_out_buf = 8'h0;
+            data_out_buf = 8'h32;
         end else begin
             case (state)
                 WAIT: begin
@@ -96,11 +107,11 @@ module sl811(
                         action_flag_clk = action_flag_we;
                         if (action == READ) begin
                             // Write addr for read op
-                            state = BEFORE_READING;
+                            state = WRITING_ADDR_FOR_READ;
                             raw_a0 = 0;
                         end else begin
                             // Write addr/data for write op
-                            state = WAIT;
+                            state = WRITING_HOLD;
                             if (addr_or_data == NEXT_ADDR)
                                 // Write data for write op
                                 raw_a0 = 1;    
@@ -109,35 +120,77 @@ module sl811(
                         end
                     end
                 end
-                BEFORE_READING: begin
-                    if (cnt_before_reading == 5) begin
-                        cnt_before_reading = 0;
-                        state = READING;
+                WRITING_HOLD: begin
+                    if (cnt_writing_hold == 3) begin
+                        state = WRITING_A0;
+                        cnt_writing_hold = 0;
                     end else begin
-                        cnt_before_reading = cnt_before_reading + 1;
+                        cnt_writing_hold = cnt_writing_hold + 1;
                     end
                 end
-                READING: begin
-                    // Read data
-                    writing_to_sl811 = 0;
-                    raw_we_n = 1;
-                    raw_rd_n = 0;
-                    raw_a0 = 1;
-                    data_out_buf = raw_data;
-                    state = READING_SAVE;
+                WRITING_A0: begin
+                    if (cnt_writing_a0 == 1) begin
+                        state = WAIT;
+                        cnt_writing_a0 = 0;
+                        raw_we_n = 1;
+                        raw_a0 = 1;
+                        writing_to_sl811 = 0;
+                    end else begin
+                        raw_we_n = 1;
+                        cnt_writing_a0 = cnt_writing_a0 + 1;
+                    end
                 end
-                READING_SAVE: begin
+                WRITING_ADDR_FOR_READ: begin // wait for nWR 0 holds, 100ns
+                    if (cnt_wafr == 3) begin
+                        cnt_wafr = 0;
+                        state = WRITE_ADDR_HOLD_A0_DATA;
+                    end else begin
+                        cnt_wafr = cnt_wafr + 1;
+                    end
+                end
+                WRITE_ADDR_HOLD_A0_DATA: begin // wait for A0 and Data, 20ns
+                    raw_we_n = 1;
+                    state = WRITING_ADDR_FOR_READ_WR_HOLD;
+                end
+                WRITING_ADDR_FOR_READ_WR_HOLD: begin // wait for nWR 1 holds, 80ns
+                    raw_a0 = 1;
+                    writing_to_sl811 = 0;
+                    if (cnt_wafrwh == 3) begin
+                        cnt_wafrwh = 0;
+                        state = READING;
+                    end else begin
+                        cnt_wafrwh = cnt_wafrwh + 1;
+                    end
+                end
+                READING: begin // Waiting for data to stablize, 40ns
+                    // Read data
+                    raw_rd_n = 0;
+                    if (cnt_reading == 1) begin
+                        state = READING_SAVE;
+                        cnt_reading = 0;
+                    end else begin
+                        cnt_reading = cnt_reading + 1;
+                    end
+                end
+                READING_SAVE: begin // Read data, 20ns
                     // Wait for data to be stable
                     data_out_buf = raw_data;
-                    raw_a0 = 1;
-                    state = WAIT;
+                    state = READING_RECOVER;
+                end
+                READING_RECOVER: begin // Waiting for rd = 1 holds, 40ns
+                    if (cnt_reading_recover == 1) begin
+                        cnt_reading_recover = 0;
+                        state = WAIT;
+                    end else begin
+                        cnt_reading_recover = cnt_reading_recover + 1;
+                    end
                 end
             endcase           
         end
     end
     
     assign raw_cs_n = ce;
-    assign raw_rst_n = rst;
+    assign raw_rst_n = ~rst;
     assign raw_data = writing_to_sl811 ? raw_data_out : 8'bZZZZZZZZ;
     assign data_out = data_out_buf;
     

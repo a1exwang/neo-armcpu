@@ -40,8 +40,8 @@ module test_phy_mem(
     reg oe = 0;
     reg [31:0] addr;
     reg [31:0] data_in_mem;
-    wire [7:0] sl811_data_in;
-    wire [7:0] sl811_data_out;
+    wire [7:0] data_sl2mem;
+    wire [7:0] data_mem2sl;
     
     phy_mem_ctrl phy_mem_test(
         .clk50M(clk),
@@ -54,8 +54,8 @@ module test_phy_mem(
         .busy(busy),
        
         // sl811 interface
-        .sl811_data_in(sl811_data_out),
-        .sl811_data_out(sl811_data_in),
+        .sl811_data_in(data_sl2mem),
+        .sl811_data_out(data_mem2sl),
         .sl811_we(sl811_we),
         .sl811_rw(sl811_rw),
         .sl811_ce(sl811_ce)
@@ -64,8 +64,8 @@ module test_phy_mem(
     sl811 sl811_test(
             .clk50M(clk),
             .rst(rst),
-            .data_in(sl811_data_in),
-            .data_out(sl811_data_out),
+            .data_in(data_mem2sl),
+            .data_out(data_sl2mem),
             .rw(sl811_rw), // 0 for read, 1 for write
             .we(sl811_we), // More precisely 'operation enabled'
             .ce(sl811_ce),
@@ -75,7 +75,7 @@ module test_phy_mem(
             .raw_rd_n(raw_rd_n),
             .raw_cs_n(raw_cs_n),
             .raw_rst_n(raw_rst_n));
-    assign raw_data = oe ? 8'h32 : 8'bZZZZZZZZ;
+    assign raw_data = oe ? 8'h44 : 8'bZZZZZZZZ;
     assign raw_data_out = oe ? 8'bZZZZZZZZ : raw_data;
     always #10 clk = ~clk;
         initial begin
@@ -95,7 +95,7 @@ module test_phy_mem(
             is_write = 1;
             addr = `SL811_CTRL_ADDR;
             data_in_mem = 32'h1ab;
-            #200;
+            #280;
             
             is_write = 0;
             #20;
@@ -104,20 +104,20 @@ module test_phy_mem(
             is_write = 1;
             addr = `SL811_CTRL_ADDR;
             data_in_mem = 32'hcd;
-            #200;
+            #280;
             is_write = 0;
             #20;
             
-            // read data
-            is_write = 1;
-            addr = `SL811_CTRL_ADDR;
-            data_in_mem = 32'h2e;
-            #20;
-            oe = 1;
-            #180;
+//            // read data
+//            is_write = 1;
+//            addr = `SL811_CTRL_ADDR;
+//            data_in_mem = 32'h2e;
+//            #155;
+//            oe = 1;
+//            #165;
             
-            is_write = 0;
-            addr = `SL811_DATA_ADDR;
-            #160;
+//            is_write = 0;
+//            addr = `SL811_DATA_ADDR;
+//            #320;
         end
 endmodule

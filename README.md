@@ -93,6 +93,13 @@
   - 这样的好处就是和 Linux 下的 SL811 驱动实现的方法类似, 易于将 Linux 下的驱动移植过来
 - 存在问题
   - SL811 的时序图有些不敢确定, 之后根据时序图再修改一下读写 SL811 的等待时间
+  - 加上 SL811 之后 会出现 AlignmentError
+
+#### 2017.07.16
+- SL811
+  - 发现了时序上的 bug 和 rst_n 写反了, 改过来之后能顺利读 HWREV 寄存器, REV = 2
+  - ![hwreg](screenshots/neo_ucore_sl811.jpg)
+  - 开始调试写 SL811 寄存器
 
 ## Long Term Goals
 - ~~修改 armcpu 能在新板子上有 VGA 显示~~
@@ -106,3 +113,4 @@
 - [@jiakai 项目](https://git.net9.org/armcpu-devteam/armcpu)
 - [Linux sl811 Driver](https://github.com/torvalds/linux/blob/5924bbecd0267d87c24110cbe2041b5075173a25/drivers/usb/host/sl811-hcd.c)
 - [Cypress SL811HS Manual](http://www.cypress.com/file/126236/download)
+- @张宇翔

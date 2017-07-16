@@ -196,18 +196,6 @@ int fork_run_command(char *buffer) {
   return ret;
 }
 
-void sl811_write(unsigned char reg, unsigned char data) {
-    volatile int *sl811_ctrl = (int*)0xaf000000;
-    *sl811_ctrl = reg;
-    *sl811_ctrl = data;
-}
-unsigned char sl811_read(unsigned char reg) {
-    volatile int *sl811_ctrl = (int*)0xaf000000;
-    volatile const int *sl811_data = (const int*)0xaf000004;
-    *sl811_ctrl = reg;
-    return *sl811_data;
-}
-
 /*
  * SL811HS register declarations and HCD data structures
  *
@@ -333,6 +321,34 @@ int mdelay(int ms) {
   return sum;
 }
 
+void sl811_write(unsigned char reg, unsigned char data) {
+    volatile int *sl811_ctrl = (int*)0xaf000000;
+    *sl811_ctrl = reg;
+    __nop;
+    __nop;
+    __nop;
+    __nop;
+    __nop;
+    *sl811_ctrl = data;
+    __nop;
+    __nop;
+    __nop;
+    __nop;
+    __nop;
+}
+unsigned char sl811_read(unsigned char reg) {
+    volatile int *sl811_ctrl = (int*)0xaf000000;
+    volatile const unsigned int *sl811_data = (const unsigned int*)0xaf000004;
+    *sl811_ctrl = reg;
+    __nop;
+    __nop;
+    __nop;
+    __nop;
+    __nop;
+    return *sl811_data;
+}
+
+
 void setup_sl811() {
     sl811_write(SL11H_IRQ_ENABLE, 0);
     sl811_write(SL11H_IRQ_STATUS, ~0);
@@ -342,6 +358,22 @@ void setup_sl811() {
     sl811_write(SL11H_IRQ_ENABLE, 0);
     /* sl811_write(SL11H_CTLREG1, sl811->ctrl1); */
     /* sl811_write(SL811HS_CTLREG2, SL811HS_CTL2_INIT); */
+}
+
+void print_sl811(int start, int count) {
+    int x = 0;
+    int i = 0, j;
+    for (; i < 8; ++i) {
+        printf("0x%02x:  ", start + i * 16);
+        for (j = 0; j < 16; ++j) {
+            printf("%02x ", sl811_read(start + i * 16 + j));
+            x += 1;
+            if (x == count) {
+                return;
+            }
+        }
+        printf("\n");
+    }
 }
 
 int
@@ -364,12 +396,18 @@ main(int argc, char **argv) {
     char *cmd1 = "ls";
     int ret1 = fork_run_command(cmd1);
     printf("%s (%d)\n", cmd1, ret1);
+    
+    // sl811
+    printf("sl811[HWREV] = %02x\n", sl811_read(SL11H_HWREVREG));
 
-    setup_sl811();
+    printf("pre-init\n");
+    print_sl811(0, 16);
+
     printf("sl811 setup\n");
+    setup_sl811();
+    sl811_write(SL11H_IRQ_ENABLE, 1);
+    print_sl811(0, 16);
 
-    printf("sl811[5] %x\n", sl811_read(0x5));
-    printf("sl811[HWREV] %x\n", sl811_read(0xE));
 
     char *buffer;
     while ((buffer = readline((interactive) ? "$ " : NULL)) != NULL) {

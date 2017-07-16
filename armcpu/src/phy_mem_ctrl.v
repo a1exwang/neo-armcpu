@@ -35,7 +35,7 @@
 `define FLASH_WRITE_WIDTH 4
 `define FLASH_WRITE_READ_RECOVERY 2
 
-`define SL811_WRITE_WIDTH 5
+`define SL811_WRITE_WIDTH 11
 `define SL811_WRITE_READ_RECOVERY 4
 
 // physical memory controller
@@ -107,8 +107,8 @@ module phy_mem_ctrl(
 
 	reg [31:0] write_addr_latch, write_data_latch;
 	reg [3:0] state;
-	reg [3:0] write_cnt;
-	wire [3:0] write_cnt_next = write_cnt + 1'b1;
+	reg [4:0] write_cnt;
+	wire [4:0] write_cnt_next = write_cnt + 1'b1;
 	localparam READ = 4'h0,
 		WRITE_RAM = 4'h1, WRITE_FLASH = 4'h2, 
 		WRITE_SL811_CTRL = 4'h3, RECOVERY_READ = 4'hF;
