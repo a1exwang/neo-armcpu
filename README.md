@@ -10,6 +10,12 @@
   - 开始调试写 SL811 寄存器
   - 终于调通了读写 SL811 寄存器, 用了 Vivado ILA 看板子上信号, 发现写入时的波形和读相同, 发现是 ucore 里写的时候忘设了一个 bit
   - 开始调研 USB 协议
+  - 尝试实现一个最简单的 GetDescriptor 操作
+  - 成功实现 GetDescriptor 操作
+
+- TODOs
+  - 代码重构, 把调试写的烂代码写成可复用的代码
+  - 继续实现 SetAddress 等操作
 
 #### 2017.07.15
 - SL811
@@ -116,4 +122,7 @@
 - [@jiakai 项目](https://git.net9.org/armcpu-devteam/armcpu)
 - [Linux sl811 Driver](https://github.com/torvalds/linux/blob/5924bbecd0267d87c24110cbe2041b5075173a25/drivers/usb/host/sl811-hcd.c)
 - [Cypress SL811HS Manual](http://www.cypress.com/file/126236/download)
+- [USB in a Nutshell](http://www.beyondlogic.org/usbnutshell/usb1.shtml)
+- [USB Made Simple](http://www.usbmadesimple.co.uk/index.html)
+- [USB 协议 - 深入理解](http://blog.csdn.net/myarrow/article/details/8484113)
 - @张宇翔

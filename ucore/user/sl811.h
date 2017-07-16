@@ -132,9 +132,7 @@ void sl811_write(unsigned char reg, unsigned char data) {
     __nop;
     __nop;
     __nop;
-    __nop;
     *sl811_ctrl = data;
-    __nop;
     __nop;
     __nop;
     __nop;
@@ -144,7 +142,6 @@ unsigned char sl811_read(unsigned char reg) {
     volatile int *sl811_ctrl = (int*)0xaf000000;
     volatile const unsigned int *sl811_data = (const unsigned int*)0xaf000004;
     *sl811_ctrl = (unsigned int)reg & 0xFF;
-    __nop;
     __nop;
     __nop;
     __nop;
