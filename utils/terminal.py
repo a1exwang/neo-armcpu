@@ -24,6 +24,7 @@ import os.path
 
 ser = serial.Serial(DEVICE, 115201,
         stopbits=2, parity=serial.PARITY_NONE)
+DEVICE = os.getenv('DEVICE') or DEVICE
 
 def do_print(s):
     print s.replace('\n', '\r\n') + '\r'

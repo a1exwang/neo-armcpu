@@ -127,7 +127,7 @@ int mdelay(int ms) {
 
 void sl811_write(unsigned char reg, unsigned char data) {
     volatile int *sl811_ctrl = (int*)0xaf000000;
-    *sl811_ctrl = reg;
+    *sl811_ctrl = ((unsigned int)reg & 0xFF) | 0x100;
     __nop;
     __nop;
     __nop;
@@ -143,7 +143,7 @@ void sl811_write(unsigned char reg, unsigned char data) {
 unsigned char sl811_read(unsigned char reg) {
     volatile int *sl811_ctrl = (int*)0xaf000000;
     volatile const unsigned int *sl811_data = (const unsigned int*)0xaf000004;
-    *sl811_ctrl = reg;
+    *sl811_ctrl = (unsigned int)reg & 0xFF;
     __nop;
     __nop;
     __nop;

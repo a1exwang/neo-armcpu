@@ -76,12 +76,17 @@ module sl811(
         WRITING_ADDR_FOR_READ = 4'h4, WRITE_ADDR_HOLD_A0_DATA = 4'h5,
         WRITING_ADDR_FOR_READ_WR_HOLD = 4'h6,
         
-        WRITING_HOLD = 4'h7, WRITING_A0 = 4'h8;
+        WRITING_HOLD_FOR_WRITE_ADDR = 4'h7, WRITING_HOLD_FOR_WRITE_A0 = 4'h8,
+        WRITING_ADDR_RECOVERY = 4'h9,
+        
+        WRITING_HOLD_FOR_WRITE_DATA = 4'hA,
+        WRITING_HOLD_FOR_WRITE_DATA_D = 4'hB,
+        WRITING_DATA_RECOVERY = 4'hC;
     
     reg [3:0] cnt_wafr = 0;
     reg [3:0] cnt_reading = 0;
     reg [3:0] cnt_reading_recover = 0;
-    reg [3:0] cnt_writing_hold = 0;
+    reg [3:0] cnt_hold = 0;
     reg [3:0] cnt_writing_a0 = 0;
     reg [3:0] cnt_before_reading1 = 0;
     reg [3:0] cnt_wafrwh = 0;
@@ -110,36 +115,52 @@ module sl811(
                             state = WRITING_ADDR_FOR_READ;
                             raw_a0 = 0;
                         end else begin
-                            // Write addr/data for write op
-                            state = WRITING_HOLD;
-                            if (addr_or_data == NEXT_ADDR)
+                            if (addr_or_data == NEXT_ADDR) begin
                                 // Write data for write op
-                                raw_a0 = 1;    
-                            else
-                                raw_a0 = 0;
+                                state = WRITING_HOLD_FOR_WRITE_DATA;
+                            end else begin
+                                // Write addr for write op 
+                                raw_a0 = 0;   
+                                state = WRITING_HOLD_FOR_WRITE_ADDR;
+                            end
                         end
                     end
                 end
-                WRITING_HOLD: begin
-                    if (cnt_writing_hold == 3) begin
-                        state = WRITING_A0;
-                        cnt_writing_hold = 0;
+                WRITING_HOLD_FOR_WRITE_ADDR: begin
+                    if (cnt_hold == 3) begin
+                        state = WRITING_HOLD_FOR_WRITE_A0;
+                        cnt_hold = 0;
                     end else begin
-                        cnt_writing_hold = cnt_writing_hold + 1;
+                        cnt_hold = cnt_hold + 1;
                     end
                 end
-                WRITING_A0: begin
-                    if (cnt_writing_a0 == 1) begin
-                        state = WAIT;
-                        cnt_writing_a0 = 0;
-                        raw_we_n = 1;
-                        raw_a0 = 1;
-                        writing_to_sl811 = 0;
+                WRITING_HOLD_FOR_WRITE_A0: begin
+                    raw_we_n = 1;
+                    state = WRITING_ADDR_RECOVERY;
+                end
+                WRITING_ADDR_RECOVERY: begin
+                    state = WAIT;
+                    raw_a0 = 1;
+                    writing_to_sl811 = 0;
+                end
+                
+                WRITING_HOLD_FOR_WRITE_DATA: begin
+                    if (cnt_hold == 3) begin
+                        state = WRITING_HOLD_FOR_WRITE_DATA_D;
+                        cnt_hold = 0;
                     end else begin
-                        raw_we_n = 1;
-                        cnt_writing_a0 = cnt_writing_a0 + 1;
+                        cnt_hold = cnt_hold + 1;
                     end
                 end
+                WRITING_HOLD_FOR_WRITE_DATA_D: begin
+                    raw_we_n = 1;
+                    state = WRITING_DATA_RECOVERY;
+                end
+                WRITING_DATA_RECOVERY: begin
+                    state = WAIT;
+                    writing_to_sl811 = 0;
+                end
+                
                 WRITING_ADDR_FOR_READ: begin // wait for nWR 0 holds, 100ns
                     if (cnt_wafr == 3) begin
                         cnt_wafr = 0;

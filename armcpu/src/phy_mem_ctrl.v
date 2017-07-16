@@ -35,7 +35,7 @@
 `define FLASH_WRITE_WIDTH 4
 `define FLASH_WRITE_READ_RECOVERY 2
 
-`define SL811_WRITE_WIDTH 11
+`define SL811_WRITE_WIDTH 10
 `define SL811_WRITE_READ_RECOVERY 4
 
 // physical memory controller

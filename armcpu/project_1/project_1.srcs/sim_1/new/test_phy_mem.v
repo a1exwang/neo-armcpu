@@ -95,7 +95,7 @@ module test_phy_mem(
             is_write = 1;
             addr = `SL811_CTRL_ADDR;
             data_in_mem = 32'h1ab;
-            #280;
+            #300;
             
             is_write = 0;
             #20;
@@ -104,20 +104,20 @@ module test_phy_mem(
             is_write = 1;
             addr = `SL811_CTRL_ADDR;
             data_in_mem = 32'hcd;
-            #280;
+            #300;
             is_write = 0;
             #20;
             
-//            // read data
-//            is_write = 1;
-//            addr = `SL811_CTRL_ADDR;
-//            data_in_mem = 32'h2e;
-//            #155;
-//            oe = 1;
-//            #165;
+            // read data
+            is_write = 1;
+            addr = `SL811_CTRL_ADDR;
+            data_in_mem = 32'h2e;
+            #155;
+            oe = 1;
+            #185;
             
-//            is_write = 0;
-//            addr = `SL811_DATA_ADDR;
-//            #320;
+            is_write = 0;
+            addr = `SL811_DATA_ADDR;
+            #320;
         end
 endmodule
