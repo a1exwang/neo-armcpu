@@ -33,6 +33,25 @@ void sl811_write_buf(int base, const char *buf, int n) {
       sl811_write(base + i, buf[i]);
 }
 void sl811_read_buf(int base, char *buf, int n) {
+    int x = 0;
+    int i = 0, j;
+    printf("sl811_read_buf\n");
+    for (; i < 16; ++i) {
+        printf("0x%02x:  ", base + i * 16);
+        for (j = 0; j < 16; ++j) {
+            int val = sl811_read(base + i * 16 + j);
+            printf("%02x ", x);
+            buf[x] = val;
+            x += 1;
+            if (x == n) {
+                printf("\n");
+                return;
+            }
+        }
+        printf("\n");
+    }
+}
+void sl811_read_buf_fast(int base, char *buf, int n) {
     int i;
     for (i = 0; i < n; ++i) 
       buf[i] = sl811_read(base + i);
@@ -162,7 +181,7 @@ int wait_transfer() {
         if ((ctl & 1) == 0) {
             st = sl811_read(SL11H_PKTSTATREG);
             if ((st & 0xE7) == 1) {
-                return i;
+                return i + 1;
             }
             else if ((st & 0xE7) != 0) {
                 printf("st: %02x\n", st);
@@ -176,8 +195,7 @@ int wait_transfer() {
 const char get_desc[8] = {0x80,6,0,1,0,0,0x12,0};
 int setup_packet(const struct usb_setup_pkt* ppkt,
                  int ep, 
-                 int addr, 
-                 int is_in) {
+                 int addr){
     printf("1\n");
     int buf_addr = 0x10;
     sl811_write_buf(buf_addr, (unsigned char*)ppkt, sizeof(struct usb_setup_pkt));
@@ -185,7 +203,7 @@ int setup_packet(const struct usb_setup_pkt* ppkt,
     sl811_write(SL11H_BUFLNTHREG, sizeof(struct usb_setup_pkt));
     sl811_write(SL11H_PIDEPREG, SL_SETUP | ep);
     sl811_write(SL11H_DEVADDRREG, addr);
-    sl811_write(SL11H_HOSTCTLREG, SL11H_HCTLMASK_ARM | SL11H_HCTLMASK_ENABLE | (is_in ? SL11H_HCTLMASK_IN : SL11H_HCTLMASK_OUT));
+    sl811_write(SL11H_HOSTCTLREG, SL11H_HCTLMASK_ARM | SL11H_HCTLMASK_ENABLE | SL11H_HCTLMASK_OUT);
     printf("1\n");
     int p = wait_transfer();
     if (p != 0) {
@@ -254,13 +272,6 @@ static int start = 0, count = 16;
 static char buf[0x100];
 static int a,b,c;
 static int ep = 0, addr = 0;
-static struct usb_setup_pkt pkt = {
-  USB_REQ_TYPE_IN,
-  GET_DESCRIPTOR,
-  ((USB_DESC_TYPE_DEVICE) << 8) | 0,
-  0,
-  sizeof(struct usb_dev_desc)
-};
 static struct usb_dev_desc desc;
 
 #define SET(ptr, member, val) \
@@ -279,8 +290,38 @@ void struct_set(void *ptr, int offset, int len, unsigned int val) {
     *((unsigned int*)aligned_addr) = cell_zeroed | data_shifted;
 }
 
-int
-main(int argc, char **argv) {
+void usb_get_dev_desc(struct usb_dev_desc *desc, int ep, int addr) {
+    int a, b, c;
+    struct usb_setup_pkt pkt;
+    SET(&pkt, req_type, USB_REQ_TYPE_IN | USB_REQ_TYPE_STANDARD | USB_REQ_TYPE_DEVICE);
+    SET(&pkt, req, GET_DESCRIPTOR);
+    SET(&pkt, val, (USB_DESC_TYPE_DEVICE) << 8 | 0);
+    SET(&pkt, idx, 0);
+    SET(&pkt, cnt, sizeof(struct usb_dev_desc));
+    a = setup_packet(&pkt, ep, addr);
+    b = in_packet((char*)desc, sizeof(struct usb_dev_desc), ep, addr); 
+    c = status_packet(ep, addr);
+    printf("Cycles: %d, %d, %d\n", a, b, c);
+    printf("DeviceDescriptor returned:\n");
+    print_mem((const char*)desc, sizeof(*desc));
+}
+
+void usb_set_address(int ep, int addr, int new_addr) {
+    int a, c;
+    struct usb_setup_pkt pkt;
+    SET(&pkt, req_type, USB_REQ_TYPE_OUT | USB_REQ_TYPE_STANDARD | USB_REQ_TYPE_DEVICE);
+    SET(&pkt, req, SET_ADDRESS);
+    SET(&pkt, val, new_addr);
+    SET(&pkt, idx, 0);
+    SET(&pkt, cnt, 0);
+    a = setup_packet(&pkt, ep, addr);
+    b = in_packet(buf, 0, ep, addr);
+    /* c = status_packet(ep, addr); */
+    printf("Cycles: %d, %d\n", a, b);
+    printf("Address set: %x\n", new_addr);
+}
+
+int main(int argc, char **argv) {
 
     if (argc >= 2) {
         cmd = argv[1];
@@ -308,18 +349,36 @@ main(int argc, char **argv) {
         data = hex2i(argv[3]);
         sl811_write(reg, data);
     }
-    else if (strcmp(cmd, "getdesc") == 0 && argc == 2) {
-        printf("1\n");
-        SET(&pkt, idx, 0);
-        printf("1\n");
-        a = setup_packet(&pkt, 0, ep, addr);
-        printf("1\n");
-        b = in_packet((char*)&desc, sizeof(struct usb_dev_desc), ep, addr); 
-        c = status_packet(ep, addr);
-        printf("In packet: ");
-        print_mem((const char*)&desc, sizeof(desc));
-        printf("Cycles: %d, %d, %d\n", a, b, c);
+    else if (strcmp(cmd, "getdesc") == 0 && argc >= 2) {
+        int addr = 0;
+        if (argc >= 3)
+            addr = hex2i(argv[2]);
+        usb_get_dev_desc(&desc, 0, addr);
     }
+    else if (strcmp(cmd, "setaddr") == 0 && argc >= 2) {
+        int addr = 0, new_addr = 1;
+        if (argc >= 3)
+            addr = hex2i(argv[2]);
+        if (argc >= 4)
+            new_addr = hex2i(argv[3]);
+        usb_set_address(0, addr, new_addr);
+    }
+    /* else if (strcmp(cmd, "getconf") == 0 && argc >= 2) { */
+    /*     int addr = 1, len = sizeof(struct usb_conf_desc); */
+    /*     if (argc >= 3) */
+    /*         addr = hex2i(argv[2]); */
+    /*     if (argc >= 4) */
+    /*         len = hex2i(argv[2]); */
+    /*     usb_get_conf_desc(conf_desc, 0, addr, len); */
+    /* } */
+    /* else if (strcmp(cmd, "getstr") == 0 && argc >= 4) { */
+    /*     int addr, idx, len; */
+    /*     addr = hex2i(argv[2]); */
+    /*     idx = hex2i(argv[3]); */
+    /*     usb_get_str_desc(buf, &len, 0, addr, idx); */
+    /*     buf[len] = 0; */
+    /*     printf("StringDescriptor: '%s'", buf); */
+    /* } */
     else if (strcmp(cmd, "msleep") == 0 && argc == 3) {
         msleep(hex2i(argv[2]));
     }

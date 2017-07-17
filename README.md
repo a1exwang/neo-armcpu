@@ -10,6 +10,15 @@
   - 将代码模块化, 把各种 Magic Number 变成结构体和定义
   - 发现给结构体的成员变量赋值会导致 Kernal Panic, Illegal Instruction, 给这种结构体成员变量赋值的时候 gcc 会生成, sb 这种 armcpu 中没实现的指令. 用了一些 C语言 trick 进行对齐读写防止生成这种指令.
 
+- USB 协议大体流程(HID 设备)
+  - IN  GetDescriptor
+  - OUT SetAddress
+  - IN  GetDescriptor
+  - IN  GetConfigurationDescriptor (First 9 bytes)
+  - IN  GetConfigurationDescriptor (Descriptor set)
+  - IN  GetStringDescriptor..
+  - OUT SetConfigurationDescriptor (Device Configured)
+  - OUT SetIdle (Only respond to interrupts requests)
 
 #### 2017.07.16
 - SL811
@@ -133,4 +142,6 @@
 - [USB in a Nutshell](http://www.beyondlogic.org/usbnutshell/usb1.shtml)
 - [USB Made Simple](http://www.usbmadesimple.co.uk/index.html)
 - [USB 协议 - 深入理解](http://blog.csdn.net/myarrow/article/details/8484113)
+- [USB SetAddress Packet](http://www.microchip.com/forums/m228309.aspx)
+- [Wireshark USB Filter](https://www.wireshark.org/docs/dfref/u/usb.html)
 - @张宇翔
