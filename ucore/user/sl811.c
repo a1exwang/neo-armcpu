@@ -7,6 +7,24 @@
 
 #define printf(...)                     fprintf(1, __VA_ARGS__)
 
+inline void msleep(int ms) {
+    int i;
+    for (i = 0; i < ms * (1000); ++i) {
+        __nop;
+    }
+}
+
+
+void usage() {
+    printf("sl811 [args]\n");
+    printf("  p [addr] [size], default, addr=0,size=0x10, in hex, print regs\n");
+    printf("  i, print info\n");
+    printf("  w reg val, write reg\n");
+    printf("  r reg, read reg\n");
+    printf("  e <ops_str>, send packets, ops can be s,i,t\n");
+    printf("  get_desc, get descriptor\n");
+}
+
 
 void sl811_write_buf(int base, const char *buf, int n) {
     int i;
@@ -28,6 +46,7 @@ void print_mem(const char *start, int count) {
             printf("%02x ", sl811_read(start[i * 16 + j]));
             x += 1;
             if (x == count) {
+                printf("\n");
                 return;
             }
         }
@@ -134,17 +153,20 @@ void print_sl811_info() {
 int transmit_cnt = 0;
 
 int wait_transfer() {
-    int st, __i;
+    volatile unsigned int st, ctl;
+    int i;
     // 20ms
-    for (__i = 0; __i < 100000; ++__i) {
-    /* while (1) { */
-        st = sl811_read(SL11H_PKTSTATREG);
-        if (st & 0xE7 == 1) {
-            return 0;
-        }
-        else if (st & 0xE7 != 0) {
-            printf("st: %02x\n", st);
-            return -1;
+    for (i = 0; i < 100000; ++i) {
+        ctl = sl811_read(SL11H_HOSTCTLREG);
+        if ((ctl & 1) == 0) {
+            st = sl811_read(SL11H_PKTSTATREG);
+            if ((st & 0xE7) == 1) {
+                return i;
+            }
+            else if ((st & 0xE7) != 0) {
+                printf("st: %02x\n", st);
+                return -1;
+            }
         }
     }
     return -2;
@@ -160,11 +182,11 @@ int setup_packet() {
     sl811_write(SL11H_HOSTCTLREG, 7);
     int p = wait_transfer();
     if (p != 0) {
+        print_sl811_info();
         if (p == -2)
             printf("setup_packet timeout\n");
         else
             printf("setup_packet error\n");
-        print_sl811_info();
         return -1;
     }
     sl811_write(SL11H_IRQ_STATUS, 0);
@@ -182,11 +204,11 @@ int in_packet(char *buf, int len) {
     sl811_write(SL11H_HOSTCTLREG, 3);
     int p = wait_transfer();
     if (p != 0) {
+        print_sl811_info();
         if (p == -2)
             printf("in_packet timeout\n");
         else
             printf("in packet error\n");
-        print_sl811_info();
         return -1;
     }
     sl811_write(SL11H_IRQ_STATUS, 0);
@@ -270,14 +292,19 @@ main(int argc, char **argv) {
         }
     }
     else if (strcmp(cmd, "get_desc") == 0 && argc == 2) {
-        setup_packet();
-        in_packet(buf, 0x12); 
-        status_packet();
+        int a,b,c;
+        a = setup_packet();
+        b = in_packet(buf, 0x12); 
+        c = status_packet();
         printf("In packet: ");
         print_mem(buf, 0x12);
+        printf("Cycles: %d, %d, %d\n", a, b, c);
     }
     else if (strcmp(cmd, "setup_pkt") == 0 && argc == 2) {
         setup_packet();
+    }
+    else if (strcmp(cmd, "msleep") == 0 && argc == 3) {
+        msleep(hex2i(argv[2]));
     }
     return 0;
 }
