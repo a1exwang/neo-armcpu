@@ -17,7 +17,7 @@
   - IN  GetConfigurationDescriptor (First 9 bytes)
   - IN  GetConfigurationDescriptor (Descriptor set)
   - IN  GetStringDescriptor..
-  - OUT SetConfigurationDescriptor (Device Configured)
+  - OUT SetConfiguration (Device Configured)
   - OUT SetIdle (Only respond to interrupts requests)
 
 #### 2017.07.16

@@ -266,13 +266,7 @@ int status_packet(int ep,
     return 0;
 }
 
-static const char *cmd;
-static int reg, data;
-static int start = 0, count = 16;
-static char buf[0x100];
-static int a,b,c;
-static int ep = 0, addr = 0;
-static struct usb_dev_desc desc;
+static char g_buf[0x10000];
 
 #define SET(ptr, member, val) \
       struct_set((ptr), \
@@ -307,7 +301,7 @@ void usb_get_dev_desc(struct usb_dev_desc *desc, int ep, int addr) {
 }
 
 void usb_set_address(int ep, int addr, int new_addr) {
-    int a, c;
+    int a, b; char buf[10];
     struct usb_setup_pkt pkt;
     SET(&pkt, req_type, USB_REQ_TYPE_OUT | USB_REQ_TYPE_STANDARD | USB_REQ_TYPE_DEVICE);
     SET(&pkt, req, SET_ADDRESS);
@@ -321,7 +315,51 @@ void usb_set_address(int ep, int addr, int new_addr) {
     printf("Address set: %x\n", new_addr);
 }
 
+void usb_get_conf_desc(char *buf, int len, int ep, int addr) {
+    int a, b, c, n_read = 0, n_max = 120, rest = len, offset = 0, pkt_size = 0;
+    struct usb_setup_pkt pkt;
+    SET(&pkt, req_type, USB_REQ_TYPE_IN | USB_REQ_TYPE_STANDARD | USB_REQ_TYPE_DEVICE);
+    SET(&pkt, req, GET_DESCRIPTOR);
+    SET(&pkt, val, (USB_DESC_TYPE_CONF) << 8 | 0);
+    SET(&pkt, idx, 0);
+    SET(&pkt, cnt, len);
+    a = setup_packet(&pkt, ep, addr);
+    while (1) {
+        offset = len - rest;
+        if (rest > n_max)
+            pkt_size = n_max;
+        else
+            pkt_size = rest;
+        rest -= pkt_size;
+        b = in_packet(((char*)g_buf + offset), pkt_size, ep, addr); 
+        if (rest <= 0)
+            break;
+    }
+    c = status_packet(ep, addr);
+    printf("Cycles: %d, %d, %d\n", a, b, c);
+    printf("ConfigurationDescriptor returned:\n");
+    print_mem((const char*)buf, len);
+}
+void usb_get_str_desc(char *buf, int *plen, int ep, int addr, int idx) {
+    int a, b, c, max_packet_size = 0x3C; // 60Bytes
+    struct usb_setup_pkt pkt;
+    SET(&pkt, req_type, USB_REQ_TYPE_IN | USB_REQ_TYPE_STANDARD | USB_REQ_TYPE_DEVICE);
+    SET(&pkt, req, GET_DESCRIPTOR);
+    SET(&pkt, val, (USB_DESC_TYPE_STR) << 8 | idx);
+    SET(&pkt, idx, 0);
+    SET(&pkt, cnt, max_packet_size);
+    a = setup_packet(&pkt, ep, addr);
+    b = in_packet((char*)buf, max_packet_size, ep, addr); 
+    c = status_packet(ep, addr);
+    *plen = sl811_read(0x20);
+    printf("Cycles: %d, %d, %d\n", a, b, c);
+    printf("StringDescriptor returned, len %d:\n", *plen);
+    print_mem((const char*)buf, *plen);
+}
+
 int main(int argc, char **argv) {
+    const char *cmd;
+    int reg, data;
 
     if (argc >= 2) {
         cmd = argv[1];
@@ -334,10 +372,11 @@ int main(int argc, char **argv) {
         print_sl811_info();
     }
     else if (strcmp(cmd, "p") == 0) {
+        int start = 0, count = 0x10;
         if (argc >= 3)
             start = hex2i(argv[2]);
         if (argc >= 4)
-            start = hex2i(argv[3]);
+            count = hex2i(argv[3]);
         print_sl811(start, count);
     }
     else if (strcmp(cmd, "r") == 0 && argc == 3) {
@@ -351,6 +390,7 @@ int main(int argc, char **argv) {
     }
     else if (strcmp(cmd, "getdesc") == 0 && argc >= 2) {
         int addr = 0;
+        struct usb_dev_desc desc;
         if (argc >= 3)
             addr = hex2i(argv[2]);
         usb_get_dev_desc(&desc, 0, addr);
@@ -363,22 +403,22 @@ int main(int argc, char **argv) {
             new_addr = hex2i(argv[3]);
         usb_set_address(0, addr, new_addr);
     }
-    /* else if (strcmp(cmd, "getconf") == 0 && argc >= 2) { */
-    /*     int addr = 1, len = sizeof(struct usb_conf_desc); */
-    /*     if (argc >= 3) */
-    /*         addr = hex2i(argv[2]); */
-    /*     if (argc >= 4) */
-    /*         len = hex2i(argv[2]); */
-    /*     usb_get_conf_desc(conf_desc, 0, addr, len); */
-    /* } */
-    /* else if (strcmp(cmd, "getstr") == 0 && argc >= 4) { */
-    /*     int addr, idx, len; */
-    /*     addr = hex2i(argv[2]); */
-    /*     idx = hex2i(argv[3]); */
-    /*     usb_get_str_desc(buf, &len, 0, addr, idx); */
-    /*     buf[len] = 0; */
-    /*     printf("StringDescriptor: '%s'", buf); */
-    /* } */
+    else if (strcmp(cmd, "getconf") == 0 && argc >= 2) {
+        int addr = 1, len = sizeof(struct usb_conf_desc);
+        if (argc >= 3)
+            addr = hex2i(argv[2]);
+        if (argc >= 4)
+            len = hex2i(argv[3]);
+        usb_get_conf_desc(g_buf, len, 0, addr);
+    }
+    else if (strcmp(cmd, "getstr") == 0 && argc >= 4) {
+        int addr, idx, len;
+        addr = hex2i(argv[2]);
+        idx = hex2i(argv[3]);
+        usb_get_str_desc(g_buf, &len, 0, addr, idx);
+        g_buf[len] = 0;
+        printf("StringDescriptor: '%s'", g_buf);
+    }
     else if (strcmp(cmd, "msleep") == 0 && argc == 3) {
         msleep(hex2i(argv[2]));
     }
