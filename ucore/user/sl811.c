@@ -263,6 +263,22 @@ static struct usb_setup_pkt pkt = {
 };
 static struct usb_dev_desc desc;
 
+#define SET(ptr, member, val) \
+      struct_set((ptr), \
+                (unsigned int)(&(ptr)->member) - (unsigned int)(ptr), \
+                sizeof((ptr)->member), \
+                (val))
+
+void struct_set(void *ptr, int offset, int len, unsigned int val) {
+    unsigned int addr = (unsigned int)ptr + offset;
+    unsigned int aligned_addr = (addr & 0xFFFFFFFC);
+    unsigned int off = addr - aligned_addr;
+    unsigned int cell_data = *((unsigned int*)aligned_addr);
+    unsigned int cell_zeroed = cell_data & ~(((1<<(len*8))-1) << (off*8));
+    unsigned int data_shifted = (val & ((1<<(len*8))-1)) << (off*8);
+    *((unsigned int*)aligned_addr) = cell_zeroed | data_shifted;
+}
+
 int
 main(int argc, char **argv) {
 
@@ -294,12 +310,14 @@ main(int argc, char **argv) {
     }
     else if (strcmp(cmd, "getdesc") == 0 && argc == 2) {
         printf("1\n");
+        SET(&pkt, idx, 0);
+        printf("1\n");
         a = setup_packet(&pkt, 0, ep, addr);
         printf("1\n");
         b = in_packet((char*)&desc, sizeof(struct usb_dev_desc), ep, addr); 
         c = status_packet(ep, addr);
         printf("In packet: ");
-        print_mem(buf, 0x12);
+        print_mem((const char*)&desc, sizeof(desc));
         printf("Cycles: %d, %d, %d\n", a, b, c);
     }
     else if (strcmp(cmd, "msleep") == 0 && argc == 3) {
