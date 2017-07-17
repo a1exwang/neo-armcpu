@@ -3,6 +3,7 @@
 #include <string.h>
 #include <file.h>
 #include "sl811.h"
+#include "usb.h"
 
 
 #define printf(...)                     fprintf(1, __VA_ARGS__)
@@ -173,13 +174,19 @@ int wait_transfer() {
 }
 
 const char get_desc[8] = {0x80,6,0,1,0,0,0x12,0};
-int setup_packet() {
-    sl811_write_buf(0x10, get_desc, 8);
-    sl811_write(SL11H_BUFADDRREG, 0x10);
-    sl811_write(SL11H_BUFLNTHREG, 8);
-    sl811_write(SL11H_PIDEPREG, SL_SETUP);
-    sl811_write(SL11H_DEVADDRREG, 0);
-    sl811_write(SL11H_HOSTCTLREG, 7);
+int setup_packet(const struct usb_setup_pkt* ppkt,
+                 int ep, 
+                 int addr, 
+                 int is_in) {
+    printf("1\n");
+    int buf_addr = 0x10;
+    sl811_write_buf(buf_addr, (unsigned char*)ppkt, sizeof(struct usb_setup_pkt));
+    sl811_write(SL11H_BUFADDRREG, buf_addr);
+    sl811_write(SL11H_BUFLNTHREG, sizeof(struct usb_setup_pkt));
+    sl811_write(SL11H_PIDEPREG, SL_SETUP | ep);
+    sl811_write(SL11H_DEVADDRREG, addr);
+    sl811_write(SL11H_HOSTCTLREG, SL11H_HCTLMASK_ARM | SL11H_HCTLMASK_ENABLE | (is_in ? SL11H_HCTLMASK_IN : SL11H_HCTLMASK_OUT));
+    printf("1\n");
     int p = wait_transfer();
     if (p != 0) {
         print_sl811_info();
@@ -189,19 +196,22 @@ int setup_packet() {
             printf("setup_packet error\n");
         return -1;
     }
+    printf("1\n");
     sl811_write(SL11H_IRQ_STATUS, 0);
     return 0;
 }
 
 // IN DATA1
-int in_packet(char *buf, int len) {
+int in_packet(char *buf,
+              int len, 
+              int ep, 
+              int addr) {
     int buf_addr = 0x20;
-    sl811_write(SL11H_IRQ_STATUS, 8); // DATA1
     sl811_write(SL11H_BUFADDRREG, buf_addr);
     sl811_write(SL11H_BUFLNTHREG, len);
-    sl811_write(SL11H_PIDEPREG, SL_IN);
-    sl811_write(SL11H_DEVADDRREG, 0);
-    sl811_write(SL11H_HOSTCTLREG, 3);
+    sl811_write(SL11H_PIDEPREG, SL_IN | ep);
+    sl811_write(SL11H_DEVADDRREG, addr);
+    sl811_write(SL11H_HOSTCTLREG, SL11H_HCTLMASK_ARM | SL11H_HCTLMASK_ENABLE | SL11H_HCTLMASK_IN);
     int p = wait_transfer();
     if (p != 0) {
         print_sl811_info();
@@ -211,19 +221,20 @@ int in_packet(char *buf, int len) {
             printf("in packet error\n");
         return -1;
     }
-    sl811_write(SL11H_IRQ_STATUS, 0);
     sl811_read_buf(buf_addr, buf, len);
+    sl811_write(SL11H_IRQ_STATUS, 0);
     return 0;
 }
 
 // DATA1
-int status_packet() {
-    sl811_write(SL11H_IRQ_STATUS, 8); // DATA1
-    sl811_write(SL11H_BUFADDRREG, 0);
+int status_packet(int ep, 
+                  int addr) {
+    int buf_addr = 0x20;
+    sl811_write(SL11H_BUFADDRREG, buf_addr);
     sl811_write(SL11H_BUFLNTHREG, 0);
-    sl811_write(SL11H_PIDEPREG, SL_OUT);
-    sl811_write(SL11H_DEVADDRREG, 0);
-    sl811_write(SL11H_HOSTCTLREG, 7);
+    sl811_write(SL11H_PIDEPREG, SL_OUT | ep);
+    sl811_write(SL11H_DEVADDRREG, addr);
+    sl811_write(SL11H_HOSTCTLREG, SL11H_HCTLMASK_ARM | SL11H_HCTLMASK_ENABLE | SL11H_HCTLMASK_OUT | SL11H_HCTLMASK_TOGGLE);
 
     int p = wait_transfer();
     if (p != 0) {
@@ -237,13 +248,23 @@ int status_packet() {
     return 0;
 }
 
+static const char *cmd;
+static int reg, data;
+static int start = 0, count = 16;
+static char buf[0x100];
+static int a,b,c;
+static int ep = 0, addr = 0;
+static struct usb_setup_pkt pkt = {
+  USB_REQ_TYPE_IN,
+  GET_DESCRIPTOR,
+  ((USB_DESC_TYPE_DEVICE) << 8) | 0,
+  0,
+  sizeof(struct usb_dev_desc)
+};
+static struct usb_dev_desc desc;
 
 int
 main(int argc, char **argv) {
-    const char *cmd;
-    int reg, data;
-    int start = 0, count = 16;
-    char buf[0x100];
 
     if (argc >= 2) {
         cmd = argv[1];
@@ -271,37 +292,15 @@ main(int argc, char **argv) {
         data = hex2i(argv[3]);
         sl811_write(reg, data);
     }
-    else if (strcmp(cmd, "e") == 0 && argc == 3) {
-        const char *instrs = argv[2];
-        int len = strlen(instrs);
-        int in_packet_exists = 0;
-        int i;
-        for (i = 0; i < len; ++i) {
-            if (instrs[i] == 's') {
-                setup_packet();
-            } else if (instrs[i] == 'i') {
-                in_packet(buf, 0x12); 
-                in_packet_exists = 1;
-            } else if (instrs[i] == 't') {
-                status_packet();
-            }
-        }
-        if (in_packet_exists) {
-            printf("In packet: ");
-            print_mem(buf, 0x12);
-        }
-    }
-    else if (strcmp(cmd, "get_desc") == 0 && argc == 2) {
-        int a,b,c;
-        a = setup_packet();
-        b = in_packet(buf, 0x12); 
-        c = status_packet();
+    else if (strcmp(cmd, "getdesc") == 0 && argc == 2) {
+        printf("1\n");
+        a = setup_packet(&pkt, 0, ep, addr);
+        printf("1\n");
+        b = in_packet((char*)&desc, sizeof(struct usb_dev_desc), ep, addr); 
+        c = status_packet(ep, addr);
         printf("In packet: ");
         print_mem(buf, 0x12);
         printf("Cycles: %d, %d, %d\n", a, b, c);
-    }
-    else if (strcmp(cmd, "setup_pkt") == 0 && argc == 2) {
-        setup_packet();
     }
     else if (strcmp(cmd, "msleep") == 0 && argc == 3) {
         msleep(hex2i(argv[2]));

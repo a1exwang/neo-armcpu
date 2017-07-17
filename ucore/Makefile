@@ -22,7 +22,7 @@ GDB		:= $(GCCPREFIX)gdb
 THUMIPSCC		:= ./thumips-cc
 CLANG := clang
 CC :=$(GCCPREFIX)gcc
-CFLAGS	:=  -fno-builtin -nostdlib  -nostdinc  -EL -G0 -Wformat -O2 -mno-float #-g
+CFLAGS	:=  -fno-builtin -nostdlib  -nostdinc  -EL -G0 -Wformat -O2 -mno-float #-g -Wall
 CTYPE	:= c S
 
 LD      := $(GCCPREFIX)ld
