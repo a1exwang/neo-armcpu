@@ -10,7 +10,7 @@ WRITER_MUTE_STR = '`'
 TERMINAL_OUTUT_MAGIC = 't'
 FETCH_MAGIC = 'r'
 
-DEVICE = '/dev/ttyACM0'
+DEVICE = '/dev/ttyACM1'
 
 from terminal_input import getch
 

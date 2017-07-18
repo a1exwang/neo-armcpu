@@ -87,6 +87,7 @@ outw(uint32_t port, uint32_t data) {
 #define KEYBOARD_IRQ    6
 #define KEYBOARD       0xaf000010
 
+#define SL811_IRQ      5
 #define SL811_CTRL     0xaf000000
 #define SL811_DATA     0xaf000004
 

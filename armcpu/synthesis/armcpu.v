@@ -52,7 +52,8 @@ module armcpu(
     output sl811_we_n,
     output sl811_rd_n,
     output sl811_cs_n,
-    output sl811_rst_n);
+    output sl811_rst_n,
+    input sl811_int);
 
 	// ------------------------------------------------------------------
 
@@ -135,7 +136,8 @@ module armcpu(
         .sl811_we_n(sl811_we_n),
         .sl811_rd_n(sl811_rd_n),
         .sl811_cs_n(sl811_cs_n),
-        .sl811_rst_n(sl811_rst_n));
+        .sl811_rst_n(sl811_rst_n),
+        .sl811_int(sl811_int));
 
 	always @(posedge clk_cpu)
 		led[7:0] <= {cpu_speed[3:0], led[2:0], !led[2:0]};

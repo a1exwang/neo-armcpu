@@ -8,6 +8,7 @@
 
 `define INT_TIMER	7
 `define INT_KBD		6
+`define INT_SL811   5
 `define INT_COM		4
 
 // vim: ft=verilog

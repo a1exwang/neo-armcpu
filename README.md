@@ -3,6 +3,15 @@
 ## 终极目标
 在新板子上复现 armcpu
 
+#### 2017.07.18
+- SL811 软件驱动
+  - 继续实现了 SetAddress, GetConfigurationDescriptor, SetConfiguration,  GetStringDescriptor
+  - 发现只有一个带 USB hub 的键盘和一个蓝牙适配器能工作, 戴尔 USB 鼠标能成功发 Setup packet, 戴尔键盘能手动发 Setup packet, 感觉比较奇怪, 调了一下午也没什么结果, 决定先把中断调通.
+  - SL811 的中断信号是电平触发, 当 SL811 IntEnable 寄存器对应中断启用的时候, 发生指定中断 Int 会保持为 1, 直到 IntStatus 寄存器被清空, 而且清空 IntStatus 寄存器对对应位不是写 0, 而是 1!
+  - 完成 SL811 最简单的 Inserted/Removed 中断的处理
+- TODOs
+  - 明天把 GetDescriptor 这样的操作用中断处理一遍试试
+
 #### 2017.07.17
 - SL811 软件驱动
   - 被 C 语言操作符优先级又坑了一次, & 优先级低于 ==, 反汇编了之后发现代码不存在, 被优化掉了, 是因为逻辑恒假, 查了优先级顺序才发现 bug.

@@ -4,6 +4,7 @@
 #include <console.h>
 #include <kdebug.h>
 #include <picirq.h>
+#include <sl811.h>
 #include <trap.h>
 #include <clock.h>
 #include <intr.h>
@@ -41,6 +42,7 @@ kern_init(void) {
     pic_init();                 // init interrupt controller
     cons_init();                // init the console
     clock_init();               // init clock interrupt
+    sl811_init();               // init clock interrupt
 //    panic("init");
     check_initrd();
 

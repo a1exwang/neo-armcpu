@@ -245,7 +245,8 @@ armcpu wtfcpu(
     .sl811_rd_n(sl811_rd_n),
     .sl811_cs_n(sl811_cs_n),
     .sl811_rst_n(sl811_rst_n),
-    .sl811_raw_data(sl811_data)
+    .sl811_raw_data(sl811_data),
+    .sl811_int(sl811_int)
 );
 
 endmodule

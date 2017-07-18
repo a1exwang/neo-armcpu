@@ -56,7 +56,8 @@ module system
     output sl811_we_n,
     output sl811_rd_n,
     output sl811_cs_n,
-    output sl811_rst_n);
+    output sl811_rst_n,
+    input sl811_int);
 
 	// ------------------------------------------------------------------
 
@@ -78,6 +79,7 @@ module system
 
 		.int_com_req(int_com_req),
 		.int_kbd_req(kbd_int),
+		.int_sl811_req(sl811_int),
 
 		.dev_mem_addr(mem_addr),
 		.dev_mem_data_in(data_from_mem),

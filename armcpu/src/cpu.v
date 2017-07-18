@@ -25,6 +25,7 @@ module cpu(
 
 	input int_com_req,
 	input int_kbd_req,
+	input int_sl811_req,
 
 	// connected to physical memory controller
 	output [31:0] dev_mem_addr,
@@ -81,6 +82,7 @@ module cpu(
 		int_req = 0;
 		int_req[`INT_COM] = int_com_req;
 		int_req[`INT_KBD] = int_kbd_req;
+		int_req[`INT_SL811] = int_sl811_req;
 	end
 
 	assign {ex2mem_wb_reg_addr, ex2mem_alu_result}

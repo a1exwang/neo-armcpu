@@ -98,6 +98,7 @@ static void interrupt_handler(struct trapframe *tf)
   extern clock_int_handler(void*);
   extern serial_int_handler(void*);
   extern keyboard_int_handler();
+  extern sl811_int_handler();
   int i;
   for(i=0;i<8;i++){
     if(tf->tf_cause & (1<<(CAUSEB_IP+i))){
@@ -112,6 +113,9 @@ static void interrupt_handler(struct trapframe *tf)
         case KEYBOARD_IRQ:
           //kprintf("KEYBOARD\n");
           keyboard_int_handler();
+          break;
+        case SL811_IRQ:
+          sl811_int_handler();
           break;
         default:
           print_trapframe(tf);
