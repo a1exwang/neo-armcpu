@@ -393,20 +393,20 @@ main(int argc, char **argv) {
     //shcwd = malloc(BUFSIZE);
     assert(shcwd != NULL);
 
-    char *cmd1 = "ls";
-    int ret1 = fork_run_command(cmd1);
-    printf("%s (%d)\n", cmd1, ret1);
+    /* char *cmd1 = "ls"; */
+    /* int ret1 = fork_run_command(cmd1); */
+    /* printf("%s (%d)\n", cmd1, ret1); */
     
     // sl811
     printf("sl811[HWREV] = %02x\n", sl811_read(SL11H_HWREVREG));
 
-    printf("pre-init\n");
-    print_sl811(0, 16);
+    /* printf("pre-init\n"); */
+    /* print_sl811(0, 16); */
 
-    printf("sl811 setup\n");
-    setup_sl811();
-    sl811_write(SL11H_IRQ_ENABLE, 1);
-    print_sl811(0, 16);
+    /* printf("sl811 setup\n"); */
+    /* setup_sl811(); */
+    /* sl811_write(SL11H_IRQ_ENABLE, 1); */
+    /* print_sl811(0, 16); */
 
 
     char *buffer;
