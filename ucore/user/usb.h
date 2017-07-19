@@ -30,6 +30,10 @@
 #define USB_DESC_TYPE_IF      4
 #define USB_DESC_TYPE_EP      5
 
+#define USB_SET_FEATURE_PORT_RESET 4
+#define USB_SET_FEATURE_PORT_POWER 8
+#define USB_SET_FEATURE_PORT_CONNECTION 16
+
 struct usb_setup_pkt {
     unsigned char req_type;
     unsigned char req;
