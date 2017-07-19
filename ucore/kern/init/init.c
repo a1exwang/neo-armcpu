@@ -42,7 +42,6 @@ kern_init(void) {
     pic_init();                 // init interrupt controller
     cons_init();                // init the console
     clock_init();               // init clock interrupt
-    sl811_init();               // init clock interrupt
 //    panic("init");
     check_initrd();
 
@@ -69,6 +68,7 @@ kern_init(void) {
     intr_enable();              // enable irq interrupt
     //*(int*)(0x00124) = 0x432;
     //asm volatile("divu $1, $1, $1");
+    sl811_init();               // init sl811 interrupt
     cpu_idle();
 }
 

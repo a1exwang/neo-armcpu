@@ -4,6 +4,19 @@
 /* #include <file.h> */
 #include "sl811.h"
 #include "usb.h"
+#include <thumips.h>
+
+struct sl811 {
+    /* int hostctl; */
+    /* int hostaddr; */
+    /* int hostlen; */
+    /* int hoststatus; */
+
+    int ctl1;
+    int inten;
+    /* int intstatus; */
+    /* int ctl2; */
+};
 
 
 #define printf kprintf
@@ -132,7 +145,7 @@ int hex2i(const char *hex) {
     return sum;
 }
 
-void reset_sl811() {
+void sl811_reset(struct sl811 *sl811) {
     sl811_write(0, 0);
     sl811_write(3, 0);
     sl811_write(4, 0);
@@ -141,8 +154,8 @@ void reset_sl811() {
     sl811_write(SL11H_CTLREG1, SL11H_CTL1MASK_SE0);
     mdelay(20);
 
-    sl811_write(SL11H_IRQ_ENABLE, 0);
-    sl811_write(SL11H_CTLREG1, 0);
+    sl811_write(SL11H_IRQ_ENABLE, sl811->inten);
+    sl811_write(SL11H_CTLREG1, sl811->ctl1);
     sl811_write(SL811HS_CTLREG2, SL811HS_CTL2_INIT);
 }
 
@@ -507,12 +520,64 @@ void usb_set_conf(int ep, int addr, int idx) {
 /*     return 0; */
 /* } */
 
+struct sl811 sl811;
+
+int next_pkg = 0;
+
 void sl811_init() {
+    sl811.ctl1 = 0;
+    sl811.inten = SL11H_INTMASK_INSRMV;
     kprintf("sl811_init();\n");
+    /* sl811_reset(&sl811); */
+    /* pic_enable(SL811_IRQ); */
 }
 
+void device_insrmv(struct sl811 *sl811) {
+    /* sl811_reset(sl811); */
+    kprintf("sl811 inserted/removed\n");
+}
+
+void done(struct sl811 *sl811) {
+    int a, b, c;
+    int addr = 0, ep = 0;
+    /* struct usb_setup_pkt pkt; */
+    /* SET(&pkt, req_type, USB_REQ_TYPE_IN | USB_REQ_TYPE_STANDARD | USB_REQ_TYPE_DEVICE); */
+    /* SET(&pkt, req, GET_DESCRIPTOR); */
+    /* SET(&pkt, val, (USB_DESC_TYPE_DEVICE) << 8 | 0); */
+    /* SET(&pkt, idx, 0); */
+    /* SET(&pkt, cnt, sizeof(struct usb_dev_desc)); */
+
+    kprintf("sl811 done a\n");
+    /* char desc[0x20]; */
+
+    /* a = setup_packet(&pkt, ep, addr); */
+    /* switch (next_pkg) { */
+    /*   case 0: */
+    /*     b = in_packet((char*)desc, sizeof(struct usb_dev_desc), ep, addr);  */
+    /*     break; */
+    /*     next_pkg = 1; */
+    /*   case 1: */
+    /*     c = status_packet(ep, addr); */
+    /*     printf("Cycles: %d, %d, %d\n", a, b, c); */
+    /*     printf("DeviceDescriptor returned:\n"); */
+    /*     print_mem((const char*)desc, sizeof(*desc)); */
+    /*     next_pkg = 0; */
+    /*     break; */
+    /* } */
+    
+}
+
+
 void sl811_int_handler() {
-    /* int st = sl811_read(SL11H_IRQ_STATUS); */
-    kprintf("sl811_int\n");
-    /* sl811_write(SL11H_IRQ_STATUS, 0xff); */
+    int irqstat = sl811_read(SL11H_IRQ_STATUS) & ~SL11H_INTMASK_DP;
+    sl811_write(SL11H_IRQ_STATUS, irqstat);
+    kprintf("sl811 int 0x%x\n", irqstat);
+    if (irqstat & SL11H_INTMASK_INSRMV) {
+        device_insrmv(&sl811);
+    }
+    else if (irqstat & SL11H_INTMASK_DONE_A) {
+        done(&sl811); 
+    }
+    else {
+    }
 }

@@ -3,6 +3,10 @@
 ## 终极目标
 在新板子上复现 armcpu
 
+#### 2017.07.19
+- SL811 软件驱动
+  - 添加 SL811 的 packet 请求队列, 在 DONE_A 中断之后可以从队列中取出 packet 发送
+
 #### 2017.07.18
 - SL811 软件驱动
   - 继续实现了 SetAddress, GetConfigurationDescriptor, SetConfiguration,  GetStringDescriptor

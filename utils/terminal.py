@@ -10,7 +10,7 @@ WRITER_MUTE_STR = '`'
 TERMINAL_OUTUT_MAGIC = 't'
 FETCH_MAGIC = 'r'
 
-DEVICE = '/dev/ttyACM1'
+DEVICE = '/dev/ttyACM0'
 
 from terminal_input import getch
 
@@ -22,9 +22,9 @@ import send_file
 import os
 import os.path
 
+DEVICE = os.getenv('DEVICE') or DEVICE
 ser = serial.Serial(DEVICE, 115201,
         stopbits=2, parity=serial.PARITY_NONE)
-DEVICE = os.getenv('DEVICE') or DEVICE
 
 def do_print(s):
     print s.replace('\n', '\r\n') + '\r'
