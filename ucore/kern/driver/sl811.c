@@ -523,18 +523,22 @@ void usb_set_conf(int ep, int addr, int idx) {
 struct sl811 sl811;
 
 int next_pkg = 0;
+int active = 0;
 
 void sl811_init() {
     sl811.ctl1 = 0;
     sl811.inten = SL11H_INTMASK_INSRMV;
-    kprintf("sl811_init();\n");
+    printf("sl811_init();\n");
+    active = 1;
+    sl811_write(SL11H_IRQ_STATUS, 0xff);
+    sl811_write(SL11H_IRQ_ENABLE, 0);
     /* sl811_reset(&sl811); */
     /* pic_enable(SL811_IRQ); */
 }
 
 void device_insrmv(struct sl811 *sl811) {
     /* sl811_reset(sl811); */
-    kprintf("sl811 inserted/removed\n");
+    printf("sl811 inserted/removed\n");
 }
 
 void done(struct sl811 *sl811) {
@@ -547,31 +551,34 @@ void done(struct sl811 *sl811) {
     /* SET(&pkt, idx, 0); */
     /* SET(&pkt, cnt, sizeof(struct usb_dev_desc)); */
 
-    kprintf("sl811 done a\n");
+    printf("sl811 done a\n");
     /* char desc[0x20]; */
 
-    /* a = setup_packet(&pkt, ep, addr); */
     /* switch (next_pkg) { */
     /*   case 0: */
     /*     b = in_packet((char*)desc, sizeof(struct usb_dev_desc), ep, addr);  */
-    /*     break; */
     /*     next_pkg = 1; */
-    /*   case 1: */
-    /*     c = status_packet(ep, addr); */
-    /*     printf("Cycles: %d, %d, %d\n", a, b, c); */
-    /*     printf("DeviceDescriptor returned:\n"); */
-    /*     print_mem((const char*)desc, sizeof(*desc)); */
-    /*     next_pkg = 0; */
     /*     break; */
+      /* case 1: */
+      /*   c = status_packet(ep, addr); */
+      /*   printf("Cycles: %d, %d, %d\n", a, b, c); */
+      /*   printf("DeviceDescriptor returned:\n"); */
+      /*   print_mem((const char*)desc, sizeof(*desc)); */
+      /*   next_pkg = 0; */
+      /*   break; */
     /* } */
     
 }
 
 
 void sl811_int_handler() {
+    int irqen = sl811_read(SL11H_IRQ_ENABLE) & ~SL11H_INTMASK_DP;
+    if (!active || !irqen) return;
     int irqstat = sl811_read(SL11H_IRQ_STATUS) & ~SL11H_INTMASK_DP;
     sl811_write(SL11H_IRQ_STATUS, irqstat);
-    kprintf("sl811 int 0x%x\n", irqstat);
+    printf("sl811 int 0x%x\n", irqstat);
+
+    int irqstat_valid = irqstat & irqen;
     if (irqstat & SL11H_INTMASK_INSRMV) {
         device_insrmv(&sl811);
     }

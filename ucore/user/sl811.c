@@ -201,14 +201,21 @@ int setup_packet(const struct usb_setup_pkt* ppkt,
                  int addr){
     int buf_addr = 0x10;
     sl811_write_buf(buf_addr, (unsigned char*)ppkt, sizeof(struct usb_setup_pkt));
+    /* printf("write_buf %x, %x\n", buf_addr, sizeof(struct usb_setup_pkt)); */
     sl811_write(SL11H_BUFADDRREG, buf_addr);
+    /* printf("bufaddr %x\n", buf_addr); */
     sl811_write(SL11H_BUFLNTHREG, sizeof(struct usb_setup_pkt));
+    /* printf("buflen %x\n", sizeof(struct usb_setup_pkt)); */
     sl811_write(SL11H_PIDEPREG, SL_SETUP | ep);
+    /* printf("pidep %x\n", SL_SETUP | ep); */
     sl811_write(SL11H_DEVADDRREG, addr);
+    /* printf("devaddr %x\n", addr); */
     int v = SL11H_HCTLMASK_ARM | SL11H_HCTLMASK_ENABLE | SL11H_HCTLMASK_OUT | SL11H_HCTLMASK_AFTERSOF;
     print_sl811_info();
     printf("hostctlreg: %x\n", v);
     sl811_write(SL11H_HOSTCTLREG, v);
+    /* v = sl811_read(SL11H_HOSTCTLREG); */
+    /* printf("hostctlreg: %x\n", v); */
     int p = wait_transfer();
     if (p != 0) {
         print_sl811_info();
