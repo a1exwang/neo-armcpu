@@ -3,6 +3,18 @@
 ## 终极目标
 在新板子上复现 armcpu
 
+#### 2017.07.20
+- SL811 软件驱动
+  - 找李老师和@宇翔分别讨论了一下, 宇翔帮我用 naivemips 和 U-Boot 测了一下板子上的 SL811 是好的.
+    - 在 U-Boot 里打印出他对 SL811 寄存器的读写, 发现我和 U-Boot 不同的地方在于, U-Boot 遇到 NAK 之后, 会重试发 packet, 试着这样弄, 发现终于能正常对键盘 GetDescriptor, SetDescriptor 等所有操作了!!
+  - 测了一下之前实现的中断传输, 也是好的, 能读出键盘扫描码
+
+- TODOs
+  - 结构化 ucore 的 USB 驱动架构, 做一个 USB packet 队列
+  - 把当前的轮询方式实现的键盘做成中断驱动的, 在时钟中断里(可以使 SL811那个 SOFTimer的中断)进行 USB transfer
+  - 支持 USB Hub
+  - 最终目标倾向于在 ucore 中搭建一套 USB 驱动框架, 如果还有剩余时间, 再去复现 @jiakai 的其余工作, 今后精力主要集中在 USB 框架部分.
+
 #### 2017.07.19
 - SL811 软件驱动
   - 添加 SL811 的 packet 请求队列, 在 DONE_A 中断之后可以从队列中取出 packet 发送
