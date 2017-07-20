@@ -105,21 +105,38 @@ int hex2i(const char *hex) {
 }
 
 void reset_sl811() {
-    sl811_write(0, 0);
-    sl811_write(3, 0);
-    sl811_write(4, 0);
-    sl811_write(SL11H_IRQ_ENABLE, 0);
-    sl811_write(SL11H_IRQ_STATUS, ~1);
-/* #define SL811_12M_HI    0x2E */
-    sl811_write(SL811HS_CTLREG2, SL811HS_CTL2MASK_HOST);
-    sl811_write(SL11H_CTLREG1, SL11H_CTL1MASK_SE0);
+    sl811_write(0xf, 0xae);
+    sl811_write(0x5, 0x8);
     mdelay(20);
+    sl811_write(0x5, 0x0);
+    sl811_write(0xd, 0xff);
+    int st = sl811_read(0xd);
+    if ((st & 0x40) == 0) {
+        if ((st & 0x80) != 0) {
+            printf("12Mbps device detected\n");
+        }
+        else {
+            printf("1.5Mbps device detected\n");
+        }
+    }
+    else {
+        printf("No device detected\n");
+    }
 
-    sl811_write(SL11H_CTLREG1, 0);
-    mdelay(2);
 
-    sl811_write(SL11H_IRQ_ENABLE, 0);
-    sl811_write(SL811HS_CTLREG2, SL811HS_CTL2_INIT);
+    sl811_write(0xa, 0);
+    sl811_write(0xb, 0x50);
+    sl811_write(0xc, 0x0);
+    sl811_write(0xe, 0xe0);
+
+    sl811_write(0x5, 8);
+    mdelay(20);
+    sl811_write(0xf, 0xae);
+    sl811_write(0x5, 0x1);
+    sl811_write(0x8, 0x1);
+    sl811_write(0xd, 0xff);
+    /* sl811_write(0x6, 0x1); */
+
 }
 
 void print_sl811(int start, int count) {
@@ -185,6 +202,7 @@ void print_sl811_info() {
 
 int transmit_cnt = 0;
 int wait_transfer_time = 0;
+int last_status = 0;
 
 int wait_transfer() {
     volatile unsigned int st, ctl, irq;
@@ -197,15 +215,17 @@ int wait_transfer() {
         if ((irq & 1) != 0) {
             sl811_write(SL11H_IRQ_STATUS, 0xff);
             st = sl811_read(SL11H_PKTSTATREG);
-            if ((st & 0xC7) == 1) {
-                /* return i + 1; */
-                usleep(wait_transfer_time);
-                return 0;
-            }
-            else if ((st & 0xC7) != 0) {
-                printf("st: %02x\n", st);
-                return -1;
-            }
+            last_status = st;
+            usleep(wait_transfer_time);
+            return 0;
+            /* if ((st & 0xC7) == 1) { */
+            /*     [> return i + 1; <] */
+            /*     return 0; */
+            /* } */
+            /* else if ((st & 0xC7) != 0) { */
+            /*     printf("st: %02x\n", st); */
+            /*     return -1; */
+            /* } */
         }
     }
     return -2;
@@ -251,23 +271,34 @@ int in_packet(char *buf,
               int ep, 
               int addr) {
     int buf_addr = 0x20;
-    sl811_write(SL11H_BUFADDRREG, buf_addr);
-    sl811_write(SL11H_BUFLNTHREG, len);
-    sl811_write(SL11H_PIDEPREG, SL_IN | ep);
-    sl811_write(SL11H_DEVADDRREG, addr);
-    sl811_write(SL11H_HOSTCTLREG, SL11H_HCTLMASK_ARM | SL11H_HCTLMASK_ENABLE | SL11H_HCTLMASK_IN | SL11H_HCTLMASK_AFTERSOF);
-    int p = wait_transfer();
-    if (p != 0) {
-        print_sl811_info();
-        if (p == -2)
-            printf("in_packet timeout\n");
-        else
-            printf("in packet error\n");
-        return -1;
+    int toggle = 0;
+
+    while (1) {
+        sl811_write(SL11H_BUFADDRREG, buf_addr);
+        sl811_write(SL11H_BUFLNTHREG, len);
+        sl811_write(SL11H_PIDEPREG, SL_IN | ep);
+        sl811_write(SL11H_DEVADDRREG, addr);
+        sl811_write(SL11H_IRQ_STATUS, 0xff);
+        sl811_write(SL11H_HOSTCTLREG, SL11H_HCTLMASK_ARM | SL11H_HCTLMASK_ENABLE | SL11H_HCTLMASK_IN | SL11H_HCTLMASK_AFTERSOF);
+        int p = wait_transfer();
+        sl811_write(SL11H_IRQ_STATUS, 0xff);
+        if (p != 0) {
+            print_sl811_info();
+            if (p == -2)
+                printf("in_packet timeout\n");
+            else
+                printf("in packet error\n");
+            return -1;
+        }
+        if ((last_status & SL11H_STATMASK_ACK)) {
+            sl811_read_buf(buf_addr, buf, len);
+            return 0;
+        }
+        else if ((last_status & SL11H_STATMASK_TMOUT))
+            return -1;
+        else if ((last_status & SL11H_STATMASK_STALL))
+            return -1;
     }
-    sl811_read_buf(buf_addr, buf, len);
-    sl811_write(SL11H_IRQ_STATUS, 0xff);
-    return 0;
 }
 
 // DATA1
@@ -439,6 +470,16 @@ void usbhub_clear_feature(int ep, int addr, int port, int feature) {
     printf("USB Hub Feature cleared: %x\n", feature);
 }
 
+void usb_int_in(char *buf, int ep, int addr) {
+    int a, b;
+    int len = 8;
+    a = in_packet(buf, len, ep, addr); 
+    b = status_packet(ep, addr);
+    printf("Cycles: %d, %d, %d\n", a, b);
+    printf("IntIn returned:\n");
+    print_mem(buf, len);
+}
+
 int main(int argc, char **argv) {
     const char *cmd;
     int reg, data;
@@ -474,6 +515,26 @@ int main(int argc, char **argv) {
         sl811_write(reg, data);
     }
     else if (strcmp(cmd, "setup") == 0) {
+        struct usb_setup_pkt pkt;
+        SET(&pkt, req_type, USB_REQ_TYPE_IN | USB_REQ_TYPE_STANDARD | USB_REQ_TYPE_DEVICE);
+        SET(&pkt, req, GET_DESCRIPTOR);
+        SET(&pkt, val, (USB_DESC_TYPE_DEVICE) << 8 | 0);
+        SET(&pkt, idx, 0);
+        SET(&pkt, cnt, sizeof(struct usb_dev_desc));
+        setup_packet(&pkt, 0, 0);
+    }
+    else if (strcmp(cmd, "sofsetup") == 0) {
+        /* sl811_write(0xf, 0xae); */
+        /* sl811_write(0xe, 0xe0); */
+        /* sl811_write(0xd, 0xff); */
+        /* sl811_write(0x5, 0x01); */
+        int i, v;
+        for (i = 0; i < (65536 * 50); ++i) {
+            v = sl811_read(SL11H_SOFTMRREG);
+            if ((unsigned int)(v & 0xff) > 0x80) 
+                break;
+            __nop;
+        }
         struct usb_setup_pkt pkt;
         SET(&pkt, req_type, USB_REQ_TYPE_IN | USB_REQ_TYPE_STANDARD | USB_REQ_TYPE_DEVICE);
         SET(&pkt, req, GET_DESCRIPTOR);
@@ -543,6 +604,12 @@ int main(int argc, char **argv) {
         port = hex2i(argv[3]);
         feature = hex2i(argv[4]);
         usbhub_clear_feature(0, addr, port, feature);
+    }
+    else if (strcmp(cmd, "intin") == 0 && argc >= 4) {
+        int addr = 1, ep = 1;
+        addr = hex2i(argv[2]);
+        ep = hex2i(argv[3]);
+        usb_int_in(g_buf, ep, addr);
     }
     else if (strcmp(cmd, "msleep") == 0 && argc == 3) {
         msleep(hex2i(argv[2]));
