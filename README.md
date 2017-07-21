@@ -10,6 +10,10 @@
     - 可能是跑到哪里造成了 reset, 然后由于内存没有被初始化, 导致 assert failed
     - (不知道是因为在中断处理程序里耗时太长会怎么样)
   - 最后的解决方案是把驱动放到一个用户态应用程序里, 启动时创建这个进程, 这个进程轮询获取 SL811 状态().
+  - 实现了 sl811 进程收到键盘数据后写到 stdin
+  - 整理代码, 增加可读性
+- snake
+  - 由于 snake 不遵守约定, 直接读写内存来获取键盘状态, 不知道他们为啥要这样做, 所以需要修改一些编译选项, 让他链接上 ucore 的 libuser 从而从 stdin 读取键盘数据, 不然读不到我键盘的数据.
 
 #### 2017.07.20
 - SL811 软件驱动
@@ -172,6 +176,7 @@
 ## Reference
 - [@jiakai 项目](https://git.net9.org/armcpu-devteam/armcpu)
 - [Linux sl811 Driver](https://github.com/torvalds/linux/blob/5924bbecd0267d87c24110cbe2041b5075173a25/drivers/usb/host/sl811-hcd.c)
+- [U-Boot sl811 Driver](https://github.com/u-boot/u-boot/blob/8cbb389bb3da80cbf8911f8386cbff92c6a78afe/drivers/usb/host/sl811-hcd.c)
 - [Cypress SL811HS Manual](http://www.cypress.com/file/126236/download)
 - [USB in a Nutshell](http://www.beyondlogic.org/usbnutshell/usb1.shtml)
 - [USB Made Simple](http://www.usbmadesimple.co.uk/index.html)
@@ -179,4 +184,6 @@
 - [USB SetAddress Packet](http://www.microchip.com/forums/m228309.aspx)
 - [Wireshark USB Filter](https://www.wireshark.org/docs/dfref/u/usb.html)
 - [USB HID Protocol](https://docs.mbed.com/docs/ble-hid/en/latest/api/md_doc_HID.html)
+- [USB HID Usage Table](https://github.com/depp/keycode/blob/master/keycode.txt)
+- [USB 1.1 Specs](http://esd.cs.ucr.edu/webres/usb11.pdf)
 - @张宇翔
