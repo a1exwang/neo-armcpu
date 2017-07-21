@@ -93,7 +93,7 @@ schedule(void) {
         next->runs ++;
         if (next != current) {
             /* kprintf("########################\n"); */
-            kprintf("c %d TO %d\n", current->pid, next->pid);
+            /* kprintf("c %d TO %d\n", current->pid, next->pid); */
             /* print_trapframe(next->tf); */
             /* kprintf("@@@@@@@@@@@@@@@@@@@@@@@@\n"); */
             proc_run(next);

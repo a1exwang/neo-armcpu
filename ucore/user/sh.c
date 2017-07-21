@@ -185,7 +185,7 @@ int fork_run_command(char *buffer) {
     exit(ret);
   }
   assert(pid >= 0);
-  printf("sh waitpid pid %d\n", pid);
+  /* printf("sh waitpid pid %d\n", pid); */
   if (waitpid(pid, &ret) == 0) {
     if (ret == 0 && shcwd[0] != '\0') {
       ret = 0;
@@ -194,7 +194,7 @@ int fork_run_command(char *buffer) {
       printf("error: %d - %e\n", ret, ret);
     }
   }
-  printf("sh waitpid pid %d done\n", pid);
+  /* printf("sh waitpid pid %d done\n", pid); */
   return ret;
 }
 

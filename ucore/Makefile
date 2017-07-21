@@ -66,7 +66,7 @@ INCLUDES  := $(addprefix -I,$(SRC_DIR))
 INCLUDES  += -I$(SRCDIR)/include
 
 ifeq  ($(ON_FPGA), y)
-USER_APPLIST:= sh ls cat run sl811 s
+USER_APPLIST:= sh ls cat run sl811
 INITRD_BLOCK_CNT:=1500
 FPGA_LD_FLAGS += -S
 MACH_DEF := -DMACH_FPGA
@@ -179,12 +179,12 @@ $(TOOL_MKSFS): tools/mksfs.c
 	$(HOSTCC) $(HOSTCFLAGS) -o $@ $^
 
 $(OBJDIR)/ucore-kernel-initrd: gen_tag $(BUILD_DIR) $(TOOL_MKSFS) $(OBJ) $(USER_APP_BINS) tools/kernel.ld
-	# make -C ours/snake
+	make -C ours/snake
 	# make -C ours/slideshow
 	rm -rf $(ROOTFS_DIR) $(ROOTFS_IMG)
 	mkdir $(ROOTFS_DIR)
 	cp $(USER_APP_BINS) $(ROOTFS_DIR)
-	# cp -Lr $(USER_SRCDIR)/_archive/* $(ROOTFS_DIR)/
+	cp -Lr $(USER_SRCDIR)/_archive/* $(ROOTFS_DIR)/
 	dd if=/dev/zero of=$(ROOTFS_IMG) count=$(INITRD_BLOCK_CNT)
 	#touch $(ROOTFS_IMG)
 	$(TOOL_MKSFS) $(ROOTFS_IMG) $(ROOTFS_DIR)

@@ -668,7 +668,6 @@ int main(int argc, char **argv) {
         int pid;
         if ((pid = fork()) == 0) {
             printf("sl811 daemon started, from child\n");
-            /* reset_sl811(); */
             int addr = 1, ep = 1;
             while (1) {
                 if (usb_int_in(g_buf, ep, addr) < 0)

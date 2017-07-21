@@ -9,6 +9,7 @@
 
 #include "ps2_code.h"
 #define CPU_FREQUENCY	12500000
+#include <file.h>
 
 typedef unsigned uint32_t;
 
@@ -187,16 +188,21 @@ static inline int atoi(const char *str) {
 }
 
 static inline int get_key() {
+  int c;
 	if (*com_stat & 2)
 		return *com_data;
-	if (!(read_c0_cause() & 0x00004000)) // ps2 int
-		return 0;
-	int c = *keyboard_data;
-	if (c >= 0 && c < 256)
-		c = KEYCODE_MAP[c];
-	else
-		c = 0;
-	return c;
+	if (read_c0_cause() & 0x00004000) {// ps2 int
+    c = *keyboard_data;
+    if (c >= 0 && c < 256)
+      c = KEYCODE_MAP[c];
+    else
+      c = 0;
+    return c;
+  }
+  if (read(0, &c, 1)) {
+    return c;
+  }
+  return 0;
 }
 
 #endif // __HEADER_SYSTEM__

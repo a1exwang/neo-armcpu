@@ -20,7 +20,7 @@
 //`else
 //`define SYSTEM_STARTUP_ADDR	32'h90000000
 //`endif
-`define SYSTEM_STARTUP_ADDR	32'h80000000
+`define SYSTEM_STARTUP_ADDR	32'h90000000
 
 // vim: ft=verilog
 
