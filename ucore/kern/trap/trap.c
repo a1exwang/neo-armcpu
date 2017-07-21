@@ -115,7 +115,7 @@ static void interrupt_handler(struct trapframe *tf)
           keyboard_int_handler();
           break;
         case SL811_IRQ:
-          sl811_int_handler();
+        /*   sl811_int_handler(); */
           break;
         default:
           print_trapframe(tf);

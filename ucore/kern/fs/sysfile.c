@@ -107,6 +107,14 @@ sysfile_write(int fd, void *base, size_t len) {
     if (len == 0) {
         return 0;
     }
+    /* For stdin write */
+    int i;
+    if (fd == 0) {
+        for (i = 0; i < len; ++i) {
+            dev_stdin_write(((char*)base)[i]);
+        }
+        return len;
+    }
     if (!file_testfd(fd, 0, 1)) {
         return -E_INVAL;
     }

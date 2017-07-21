@@ -68,7 +68,7 @@ kern_init(void) {
     intr_enable();              // enable irq interrupt
     //*(int*)(0x00124) = 0x432;
     //asm volatile("divu $1, $1, $1");
-    sl811_init();               // init sl811 interrupt
+    /* sl811_init();               // init sl811 interrupt */
     cpu_idle();
 }
 

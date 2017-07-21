@@ -2,11 +2,18 @@
 #include <stdio.h>
 #include <string.h>
 #include <file.h>
+#include <readline.h>
+#include <unistd.h>
+#include <dir.h>
 #include "sl811.h"
 #include "usb.h"
+#include "usb_hid.h"
 
 
 #define printf(...)                     fprintf(1, __VA_ARGS__)
+#define BUFSIZE                         4096
+#define WHITESPACE                      " \t\r\n"
+#define SYMBOLS                         "<|>&;"
 
 inline void msleep(int ms) {
     int i;
@@ -43,20 +50,20 @@ void sl811_read_buf(int base, char *buf, int n) {
     int i = 0, j;
     if (n == 0)
         return;
-    printf("sl811_read_buf\n");
+    /* printf("sl811_read_buf\n"); */
     for (; i < 16; ++i) {
-        printf("0x%02x:  ", base + i * 16);
+        /* printf("0x%02x:  ", base + i * 16); */
         for (j = 0; j < 16; ++j) {
             int val = sl811_read(base + i * 16 + j);
-            printf("%02x ", val);
+            /* printf("%02x ", val); */
             buf[x] = val;
             if (x == n) {
-                printf("\n");
+                /* printf("\n"); */
                 return;
             }
             x += 1;
         }
-        printf("\n");
+        /* printf("\n"); */
     }
 }
 void sl811_read_buf_fast(int base, char *buf, int n) {
@@ -210,6 +217,7 @@ int wait_transfer() {
     // 20ms
     for (i = 0; i < (16384 * 100); ++i) {
         /* ctl = sl811_read(SL11H_HOSTCTLREG); */
+        yield();
         irq = sl811_read(SL11H_IRQ_STATUS);
         /* if ((ctl & 1) == 0) { */
         if ((irq & 1) != 0) {
@@ -269,7 +277,8 @@ int setup_packet(const struct usb_setup_pkt* ppkt,
 int in_packet(char *buf,
               int len, 
               int ep, 
-              int addr) {
+              int addr,
+              int wait_ack) {
     int buf_addr = 0x20;
     int toggle = 0;
 
@@ -297,6 +306,8 @@ int in_packet(char *buf,
         else if ((last_status & SL11H_STATMASK_TMOUT))
             return -1;
         else if ((last_status & SL11H_STATMASK_STALL))
+            return -1;
+        else if ((last_status & SL11H_STATMASK_NAK) && !wait_ack)
             return -1;
     }
 }
@@ -350,7 +361,7 @@ void usb_get_dev_desc(struct usb_dev_desc *desc, int ep, int addr) {
     SET(&pkt, idx, 0);
     SET(&pkt, cnt, sizeof(struct usb_dev_desc));
     a = setup_packet(&pkt, ep, addr);
-    b = in_packet((char*)desc, sizeof(struct usb_dev_desc), ep, addr); 
+    b = in_packet((char*)desc, sizeof(struct usb_dev_desc), ep, addr, 1); 
     c = status_packet(ep, addr);
     printf("Cycles: %d, %d, %d\n", a, b, c);
     printf("DeviceDescriptor returned:\n");
@@ -366,7 +377,7 @@ void usb_set_address(int ep, int addr, int new_addr) {
     SET(&pkt, idx, 0);
     SET(&pkt, cnt, 0);
     a = setup_packet(&pkt, ep, addr);
-    b = in_packet(buf, 0, ep, addr);
+    b = in_packet(buf, 0, ep, addr, 1);
     printf("Cycles: %d, %d\n", a, b);
     printf("Address set: %x\n", new_addr);
 }
@@ -387,7 +398,7 @@ void usb_get_conf_desc(char *buf, int len, int ep, int addr) {
         else
             pkt_size = rest;
         rest -= pkt_size;
-        b = in_packet(((char*)g_buf + offset), pkt_size, ep, addr); 
+        b = in_packet(((char*)g_buf + offset), pkt_size, ep, addr, 1); 
         if (rest <= 0)
             break;
     }
@@ -405,7 +416,7 @@ void usb_get_str_desc(char *buf, int *plen, int ep, int addr, int idx) {
     SET(&pkt, idx, 0);
     SET(&pkt, cnt, max_packet_size);
     a = setup_packet(&pkt, ep, addr);
-    b = in_packet((char*)buf, max_packet_size, ep, addr); 
+    b = in_packet((char*)buf, max_packet_size, ep, addr, 1); 
     c = status_packet(ep, addr);
     *plen = sl811_read(0x20);
     printf("Cycles: %d, %d, %d\n", a, b, c);
@@ -421,7 +432,7 @@ void usb_set_conf(int ep, int addr, int idx) {
     SET(&pkt, idx, 0);
     SET(&pkt, cnt, 0);
     a = setup_packet(&pkt, ep, addr);
-    b = in_packet(buf, 0, ep, addr);
+    b = in_packet(buf, 0, ep, addr, 1);
     /* c = status_packet(ep, addr); */
     printf("Cycles: %d, %d\n", a, b);
     printf("Configuration set: %x\n", idx);
@@ -436,7 +447,7 @@ void usbhub_get_status(char *buf, int ep, int addr, int port) {
     SET(&pkt, idx, port);
     SET(&pkt, cnt, status_len);
     a = setup_packet(&pkt, ep, addr);
-    b = in_packet(buf, status_len, ep, addr); 
+    b = in_packet(buf, status_len, ep, addr, 1); 
     c = status_packet(ep, addr);
     printf("Cycles: %d, %d, %d\n", a, b, c);
     printf("USB Hub GetStatus returned:\n");
@@ -451,7 +462,7 @@ void usbhub_set_feature(int ep, int addr, int port, int feature) {
     SET(&pkt, idx, port);
     SET(&pkt, cnt, 0);
     a = setup_packet(&pkt, ep, addr);
-    b = in_packet(buf, 0, ep, addr);
+    b = in_packet(buf, 0, ep, addr, 1);
     /* c = status_packet(ep, addr); */
     printf("Cycles: %d, %d\n", a, b);
     printf("USB Hub Feature set: %x\n", feature);
@@ -465,19 +476,31 @@ void usbhub_clear_feature(int ep, int addr, int port, int feature) {
     SET(&pkt, idx, port);
     SET(&pkt, cnt, 0);
     a = setup_packet(&pkt, ep, addr);
-    b = in_packet(buf, 0, ep, addr);
+    b = in_packet(buf, 0, ep, addr, 1);
     printf("Cycles: %d, %d\n", a, b);
     printf("USB Hub Feature cleared: %x\n", feature);
 }
 
-void usb_int_in(char *buf, int ep, int addr) {
-    int a, b;
+int usb_int_in(char *buf, int ep, int addr) {
+    int a, b, i, scan;
     int len = 8;
-    a = in_packet(buf, len, ep, addr); 
+    char ascii;
+    a = in_packet(buf, len, ep, addr, 0); 
     b = status_packet(ep, addr);
-    printf("Cycles: %d, %d, %d\n", a, b);
-    printf("IntIn returned:\n");
-    print_mem(buf, len);
+    if (a == 0) {
+        for (i = 2; i < 8; ++i) {
+            scan = buf[i];
+            ascii = 0;
+            if (scan > 0 && scan < 255) {
+                ascii = usb_hid_usage_table[scan];
+                if (ascii > 0) {
+                    write(0, &ascii, 1);
+                }
+            }
+        }
+        /* print_mem(buf, len); */
+    }
+    return 0;
 }
 
 int main(int argc, char **argv) {
@@ -488,7 +511,8 @@ int main(int argc, char **argv) {
         cmd = argv[1];
     }
     else {
-        cmd = "";
+        usage();
+        return 1;
     }
 
     if (strcmp(cmd, "rst") == 0) {
@@ -613,6 +637,47 @@ int main(int argc, char **argv) {
     }
     else if (strcmp(cmd, "msleep") == 0 && argc == 3) {
         msleep(hex2i(argv[2]));
+    }
+    else if (strcmp(cmd, "forkloop") == 0 && argc == 2) {
+        int pid;
+        if ((pid = fork()) == 0) {
+            printf("sl811 daemon started, from child\n");
+            int addr = 1, ep = 1;
+            while (1) {
+                if (usb_int_in(g_buf, ep, addr) < 0)
+                break;
+            }
+        }
+        else {
+            printf("sl811 daemon started pid %d\n", pid);
+        }
+    }
+    else if (strcmp(cmd, "up") == 0 && argc == 2) {
+        reset_sl811();
+
+        int addr = 0, len; 
+        int ep = 0, idx = 1;
+        struct usb_dev_desc desc;
+        usb_get_dev_desc(&desc, ep, addr);
+        usb_set_address(ep, addr, 1);
+        addr = 1; 
+        len = 9;
+        usb_get_conf_desc(g_buf, len, ep, addr);
+        usb_set_conf(ep, addr, idx);
+
+        int pid;
+        if ((pid = fork()) == 0) {
+            printf("sl811 daemon started, from child\n");
+            /* reset_sl811(); */
+            int addr = 1, ep = 1;
+            while (1) {
+                if (usb_int_in(g_buf, ep, addr) < 0)
+                break;
+            }
+        }
+        else {
+            printf("sl811 daemon started pid %d\n", pid);
+        }
     }
     else if (strcmp(cmd, "kb") == 0) {
         int addr = 0, len; 

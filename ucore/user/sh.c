@@ -185,6 +185,7 @@ int fork_run_command(char *buffer) {
     exit(ret);
   }
   assert(pid >= 0);
+  printf("sh waitpid pid %d\n", pid);
   if (waitpid(pid, &ret) == 0) {
     if (ret == 0 && shcwd[0] != '\0') {
       ret = 0;
@@ -193,6 +194,7 @@ int fork_run_command(char *buffer) {
       printf("error: %d - %e\n", ret, ret);
     }
   }
+  printf("sh waitpid pid %d done\n", pid);
   return ret;
 }
 
@@ -393,21 +395,9 @@ main(int argc, char **argv) {
     //shcwd = malloc(BUFSIZE);
     assert(shcwd != NULL);
 
-    /* char *cmd1 = "ls"; */
-    /* int ret1 = fork_run_command(cmd1); */
-    /* printf("%s (%d)\n", cmd1, ret1); */
-    
-    // sl811
-    printf("sl811[HWREV] = %02x\n", sl811_read(SL11H_HWREVREG));
-
-    /* printf("pre-init\n"); */
-    /* print_sl811(0, 16); */
-
-    /* printf("sl811 setup\n"); */
-    /* setup_sl811(); */
-    /* sl811_write(SL11H_IRQ_ENABLE, 1); */
-    /* print_sl811(0, 16); */
-
+    char *cmd1 = "sl811 up";
+    int ret1 = fork_run_command(cmd1);
+    printf("%s (%d)\n", cmd1, ret1);
 
     char *buffer;
     while ((buffer = readline((interactive) ? "$ " : NULL)) != NULL) {

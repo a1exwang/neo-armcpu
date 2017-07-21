@@ -3,6 +3,14 @@
 ## 终极目标
 在新板子上复现 armcpu
 
+#### 2017.07.21
+- SL811 软件驱动
+  - ucore 中断那部分代码貌似改动会炸
+    - 总之改了中断处理部分代码之后, 还没跑到开中断, 在 proc_init 里就会触发 assert failed, initproc->pid != 1
+    - 可能是跑到哪里造成了 reset, 然后由于内存没有被初始化, 导致 assert failed
+    - (不知道是因为在中断处理程序里耗时太长会怎么样)
+  - 最后的解决方案是把驱动放到一个用户态应用程序里, 启动时创建这个进程, 这个进程轮询获取 SL811 状态().
+
 #### 2017.07.20
 - SL811 软件驱动
   - 找李老师和@宇翔分别讨论了一下, 宇翔帮我用 naivemips 和 U-Boot 测了一下板子上的 SL811 是好的.
@@ -170,4 +178,5 @@
 - [USB 协议 - 深入理解](http://blog.csdn.net/myarrow/article/details/8484113)
 - [USB SetAddress Packet](http://www.microchip.com/forums/m228309.aspx)
 - [Wireshark USB Filter](https://www.wireshark.org/docs/dfref/u/usb.html)
+- [USB HID Protocol](https://docs.mbed.com/docs/ble-hid/en/latest/api/md_doc_HID.html)
 - @张宇翔
